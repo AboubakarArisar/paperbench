@@ -1,8 +1,13 @@
 // Paperbench — every PDF operation runs in the browser; nothing is uploaded.
 
-// Fill these in from your Lemon Squeezy dashboard (Store settings → ID; Product → ID; Product → Share → checkout link).
-// Until they're set, no license key can activate Pro.
-const LEMON = { checkout: '', storeId: 0, productId: 0 };
+// From the Lemon Squeezy dashboard (Settings → Stores for the ID; the product's URL for its ID; Product → Share for the link).
+// These are public values, not secrets. TEST MODE: this product was made in test mode. Copying it to live mode
+// gives it a new product ID and checkout link, so update both when the store goes live.
+const LEMON = {
+  checkout: 'https://dastakhat.lemonsqueezy.com/checkout/buy/1dd3f45c-8665-4b7e-8446-51a2aeb26173',
+  storeId: 415628,
+  productId: 1516455,
+};
 
 // True only for an active key that belongs to *our* product (stops keys from other Lemon Squeezy stores working).
 function isProResponse(r, cfg = LEMON) {
