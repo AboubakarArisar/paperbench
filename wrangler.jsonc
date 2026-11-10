@@ -1,0 +1,6 @@
+{
+  // Static site served by Cloudflare Workers static assets. Deploy with: npx wrangler deploy
+  "name": "paperbench",
+  "compatibility_date": "2026-11-01",
+  "assets": { "directory": "." }
+}

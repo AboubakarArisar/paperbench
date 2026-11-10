@@ -32,7 +32,7 @@ function parseRanges(str, n) {
 if (typeof module !== 'undefined') module.exports = { parseRanges, isProResponse };
 
 if (typeof document !== 'undefined') {
-  const { PDFDocument, degrees } = PDFLib;
+  const { PDFDocument, StandardFonts, degrees, radians, rgb } = PDFLib;
   pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
 
   const $ = id => document.getElementById(id);
@@ -226,10 +226,19 @@ if (typeof document !== 'undefined') {
 
   // Tool that takes one PDF free, several with Pro. `one(file)` returns { out: [[name, data], ...], msg }.
   // A single output downloads directly; anything more is zipped.
-  function batchTool(name, one) {
+  // Stops a free user at the button of a Pro-only tool and opens the upgrade dialog.
+  function needPro(what) {
+    if (pro.active) return;
+    $('pro-open').click();
+    throw new Error(`${what} is a Pro tool. Go Pro to use it.`);
+  }
+
+  // `proOnly` (a tool name) makes the whole tool Pro; otherwise only several-files-at-once is Pro.
+  function batchTool(name, one, proOnly) {
     tool(name, async () => {
       const files = [...$(`${name}-file`).files];
       if (!files.length) throw new Error('Choose a PDF file first');
+      if (proOnly) needPro(proOnly);
       if (files.length > 1 && !pro.active) {
         $('pro-open').click();
         throw new Error('Processing several files at once is a Pro feature. Pick one file, or go Pro.');
@@ -326,6 +335,144 @@ if (typeof document !== 'undefined') {
     }
     return { out: files, msg: `Converted ${files.length} page${files.length === 1 ? '' : 's'}.` };
   });
+
+  // ===== Pro tools =====
+
+  // --- Organize pages: thumbnails you can drag, nudge or remove ---
+  let org = null; // { order: [original page indices in their new order], thumbs: [image URL per original page] }
+  const thumbs = $('organize-thumbs');
+  function drawThumbs() {
+    thumbs.replaceChildren(...org.order.map((p, i) => {
+      const el = document.createElement('div');
+      el.className = 'thumb';
+      el.draggable = true;
+      el.dataset.i = i;
+      el.innerHTML = `<img alt="Page ${p + 1}" src="${org.thumbs[p]}"><span class="thumb-n">Page ${p + 1}</span>
+        <div class="thumb-actions"><button type="button" data-a="left" aria-label="Move page ${p + 1} earlier">‹</button><button type="button" data-a="del" aria-label="Remove page ${p + 1}">×</button><button type="button" data-a="right" aria-label="Move page ${p + 1} later">›</button></div>`;
+      return el;
+    }));
+  }
+  function movePage(from, to) {
+    if (to < 0 || to >= org.order.length || from === to) return;
+    org.order.splice(to, 0, org.order.splice(from, 1)[0]);
+    drawThumbs();
+  }
+  thumbs.onclick = e => {
+    const b = e.target.closest('button');
+    if (!b) return;
+    const i = +b.closest('.thumb').dataset.i;
+    if (b.dataset.a === 'del') { org.order.splice(i, 1); drawThumbs(); }
+    else movePage(i, i + (b.dataset.a === 'left' ? -1 : 1));
+  };
+  let dragFrom = null;
+  const overThumb = t => thumbs.querySelectorAll('.over').forEach(x => x !== t && x.classList.remove('over'));
+  thumbs.ondragstart = e => { const t = e.target.closest('.thumb'); dragFrom = +t.dataset.i; t.classList.add('dragging'); };
+  thumbs.ondragover = e => { e.preventDefault(); const t = e.target.closest('.thumb'); overThumb(t); if (t) t.classList.add('over'); };
+  thumbs.ondragend = () => { dragFrom = null; overThumb(); thumbs.querySelectorAll('.dragging').forEach(x => x.classList.remove('dragging')); };
+  thumbs.ondrop = e => { e.preventDefault(); const t = e.target.closest('.thumb'); if (t && dragFrom !== null) movePage(dragFrom, +t.dataset.i); };
+  $('organize-file').addEventListener('change', async () => {
+    const f = $('organize-file').files[0];
+    org = null;
+    thumbs.replaceChildren();
+    $('organize-area').hidden = true;
+    if (!f) return;
+    try {
+      const pdf = await openJs(await f.arrayBuffer()), urls = [];
+      // ponytail: renders every page up front; fine for hundreds of pages, render lazily if huge files get slow.
+      for (let i = 1; i <= pdf.numPages; i++) urls.push((await renderPage(pdf, i, 0.3)).canvas.toDataURL('image/jpeg', 0.7));
+      if ($('organize-file').files[0] !== f) return; // a different file was chosen meanwhile
+      org = { order: urls.map((_, i) => i), thumbs: urls };
+      $('organize-area').hidden = false;
+      drawThumbs();
+    } catch { toast('That file isn\'t a valid PDF.', 'error'); }
+  });
+  tool('organize', async () => {
+    const f = fileFrom('organize-file');
+    if (!org) throw new Error('Still loading the pages. Try again in a moment.');
+    if (!org.order.length) throw new Error('Keep at least one page');
+    needPro('Organize pages');
+    const src = await load(await f.arrayBuffer()), out = await PDFDocument.create();
+    (await out.copyPages(src, org.order)).forEach(p => out.addPage(p));
+    download(await out.save(), `${base(f)}-organized.pdf`);
+    return `Saved ${org.order.length} of ${src.getPageCount()} pages in the new order.`;
+  });
+
+  // --- OCR: each page becomes an image with invisible, searchable text behind it ---
+  const loadScript = src => new Promise((ok, fail) => {
+    const s = document.createElement('script');
+    s.src = src;
+    s.onload = ok;
+    s.onerror = () => fail(new Error('Couldn\'t download the text-recognition engine. Check your connection and try again.'));
+    document.head.append(s);
+  });
+  tool('ocr', async () => {
+    const f = fileFrom('ocr-file');
+    needPro('OCR');
+    // Loaded only when OCR is first used, so the rest of the site stays light.
+    if (!window.Tesseract) await loadScript('https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js');
+    const pdf = await openJs(await f.arrayBuffer()), out = await PDFDocument.create();
+    const worker = await Tesseract.createWorker('eng');
+    let words = 0;
+    try {
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const { canvas, page } = await renderPage(pdf, i, 2);
+        const { data } = await worker.recognize(canvas, {}, { text: true, pdf: true });
+        words += data.text.trim().split(/\s+/).filter(Boolean).length;
+        const [p] = await out.copyPages(await PDFDocument.load(new Uint8Array(data.pdf)), [0]);
+        const { width, height } = page.getViewport({ scale: 1 });
+        p.scale(width / p.getWidth(), height / p.getHeight()); // back to the original page size
+        out.addPage(p);
+      }
+    } finally { await worker.terminate(); }
+    download(await out.save(), `${base(f)}-searchable.pdf`);
+    return `Recognized about ${words} words on ${pdf.numPages} page${pdf.numPages === 1 ? '' : 's'}.`;
+  });
+
+  // --- Watermark: diagonal text across every page ---
+  batchTool('watermark', async f => {
+    const text = $('watermark-text').value.trim();
+    if (!text) throw new Error('Type the watermark text');
+    const doc = await load(await f.arrayBuffer());
+    const font = await doc.embedFont(StandardFonts.HelveticaBold);
+    let unit; // text width at size 1
+    try { unit = font.widthOfTextAtSize(text, 1); }
+    catch { throw new Error('Watermark text can only use English letters, numbers and common symbols for now.'); }
+    for (const p of doc.getPages()) {
+      const { width, height } = p.getSize();
+      const angle = Math.atan2(height, width);
+      const size = Math.min(0.7 * Math.hypot(width, height) / unit, 140);
+      const w = unit * size, cos = Math.cos(angle), sin = Math.sin(angle);
+      // Centre the rotated text on the page. ponytail: ignores a page's own rotation; map through it if rotated scans look off.
+      p.drawText(text, {
+        x: width / 2 - w / 2 * cos + size * 0.35 * sin,
+        y: height / 2 - w / 2 * sin - size * 0.35 * cos,
+        size, font, color: rgb(0.5, 0.5, 0.5), opacity: +$('watermark-opacity').value, rotate: radians(angle),
+      });
+    }
+    const n = doc.getPageCount();
+    return { out: [[`${base(f)}-watermarked.pdf`, await doc.save()]], msg: `Watermarked ${n} page${n === 1 ? '' : 's'}.` };
+  }, 'Watermark');
+
+  // --- Page numbers ---
+  batchTool('numbers', async f => {
+    const doc = await load(await f.arrayBuffer());
+    const font = await doc.embedFont(StandardFonts.Helvetica);
+    const pages = doc.getPages(), start = Math.max(1, Math.floor(+$('numbers-start').value) || 1), last = start + pages.length - 1;
+    const fmt = $('numbers-fmt').value, [v, h] = $('numbers-pos').value.split('-');
+    const size = 10, margin = 28;
+    pages.forEach((p, i) => {
+      const k = start + i;
+      const label = fmt === 'n' ? `${k}` : fmt === 'slash' ? `${k} / ${last}` : `Page ${k} of ${last}`;
+      const { width, height } = p.getSize(), w = font.widthOfTextAtSize(label, size);
+      // ponytail: positions use the unrotated page; rotated pages get the number on a different edge.
+      p.drawText(label, {
+        x: h === 'left' ? margin : h === 'right' ? width - margin - w : (width - w) / 2,
+        y: v === 'top' ? height - margin - size : margin,
+        size, font, color: rgb(0.3, 0.3, 0.3),
+      });
+    });
+    return { out: [[`${base(f)}-numbered.pdf`, await doc.save()]], msg: `Numbered ${pages.length} page${pages.length === 1 ? '' : 's'}.` };
+  }, 'Page numbers');
 
   // --- Sign: draw pad + click-to-place preview ---
   const pad = $('sig-pad'), ctx = pad.getContext('2d');
