@@ -1,0 +1,336 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Paperbench — PDF tools that can't see your files</title>
+<meta name="description" content="Merge, split, compress, rotate, convert and sign PDFs right in your browser. Your files never leave your device. No account, no daily limits.">
+<meta name="theme-color" content="#000000">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230071e3'/%3E%3Cpath d='M10.5 7H18l5 5v11.5a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 9 23.5v-15A1.5 1.5 0 0 1 10.5 7z' fill='%23fff'/%3E%3Cpath d='M18 7l5 5h-3.5a1.5 1.5 0 0 1-1.5-1.5z' fill='%230071e3' opacity='.35'/%3E%3Cpath d='M12.4 18.2l2.4 2.4 4.7-5.1' fill='none' stroke='%230071e3' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&display=swap">
+<link rel="stylesheet" href="styles.css?v=15">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<!-- Icon sprite -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="logo" viewBox="0 0 32 32"><rect width="32" height="32" rx="8" fill="#0071e3"/><path d="M10.5 7H18l5 5v11.5a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 9 23.5v-15A1.5 1.5 0 0 1 10.5 7z" fill="#fff"/><path d="M18 7l5 5h-3.5a1.5 1.5 0 0 1-1.5-1.5z" fill="#0071e3" opacity=".35"/><path d="M12.4 18.2l2.4 2.4 4.7-5.1" fill="none" stroke="#0071e3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-merge" viewBox="0 0 24 24"><rect x="3" y="3" width="12" height="12" rx="2.5"/><rect x="9" y="9" width="12" height="12" rx="2.5"/></symbol>
+  <symbol id="i-split" viewBox="0 0 24 24"><path d="M6 3h12a2 2 0 0 1 2 2v3M4 8V5a2 2 0 0 1 2-2M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3M2 12h3m3.5 0h3m3.5 0h3m3 0h1"/></symbol>
+  <symbol id="i-compress" viewBox="0 0 24 24"><path d="M4 4l5.5 5.5M9.5 5v4.5H5M20 20l-5.5-5.5M14.5 19v-4.5H19"/></symbol>
+  <symbol id="i-rotate" viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.4-5.7M20 4v5h-5"/></symbol>
+  <symbol id="i-images" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2.5"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="M21 15.5l-5-5L7 20"/></symbol>
+  <symbol id="i-sign" viewBox="0 0 24 24"><path d="M3 16c2.5-7 5-7 6-2.5s2.500 3.500 4.500-.5 4-2 7.500 1M3 21h18"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2.500"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.500l4.500 4.500L19 7"/></symbol>
+  <symbol id="i-bolt" viewBox="0 0 24 24"><path d="M13 3L5 14h6l-1 7 8-11h-6z"/></symbol>
+  <symbol id="i-infinity" viewBox="0 0 24 24"><path d="M12 12c-2-3-3.500-4.500-5.500-4.500a4.500 4.500 0 0 0 0 9c2 0 3.500-1.500 5.500-4.500zm0 0c2 3 3.500 4.500 5.500 4.500a4.500 4.500 0 0 0 0-9c-2 0-3.500 1.500-5.500 4.500z"/></symbol>
+  <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 16V5m0 0L7.500 9.500M12 5l4.500 4.500M5 19h14"/></symbol>
+</svg>
+
+<header class="nav">
+  <div class="wrap">
+    <a class="brand" href="#" aria-label="Paperbench home"><svg aria-hidden="true"><use href="#logo"/></svg>Paperbench</a>
+    <nav aria-label="Main">
+      <a href="#tools" class="hide-sm">Tools</a>
+      <a href="#pricing">Pricing</a>
+      <a href="#privacy" class="hide-sm">Privacy</a>
+      <button class="btn small" id="pro-open" type="button">Go Pro</button>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+
+<!-- ============ Home ============ -->
+<div class="view" id="home">
+  <section class="hero wrap">
+    <div class="eyebrow"><svg class="icon" aria-hidden="true"><use href="#i-lock"/></svg>Private by design</div>
+    <h1 tabindex="-1">The PDF tools that can&rsquo;t see your files.</h1>
+    <p class="lede">Merge, split, compress, rotate, convert and sign, on your own device. Your files are never uploaded, so there&rsquo;s nothing for us to see, store or lose. No account. No daily limits.</p>
+    <div class="cta">
+      <a class="btn" href="#tools">Choose a tool</a>
+      <a class="link-arrow" href="#pricing">See pricing</a>
+    </div>
+    <div class="mock" aria-hidden="true">
+      <div class="mock-bar"><i></i><i></i><i></i></div>
+      <div class="mock-row">
+        <span class="file-ic">PDF</span>
+        <div><b>quarterly-report.pdf</b><small>Compressing on this device…</small><div class="bar"><span></span></div></div>
+      </div>
+      <div class="mock-foot"><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg>0 bytes uploaded</div>
+    </div>
+  </section>
+
+  <section class="section alt" id="tools">
+    <div class="wrap">
+      <div class="section-head"><h2>Six tools. All free.</h2><p>Pick one and drop in a file. It starts working straight away.</p></div>
+      <div class="grid">
+        <a class="card" href="#merge"><span class="tile"><svg class="icon" aria-hidden="true"><use href="#i-merge"/></svg></span><h3>Merge PDF</h3><p>Combine several PDFs into one file.</p><span class="go link-arrow">Open</span></a>
+        <a class="card" href="#split"><span class="tile"><svg class="icon" aria-hidden="true"><use href="#i-split"/></svg></span><h3>Split PDF</h3><p>Pull out the pages you need, or save every page separately.</p><span class="go link-arrow">Open</span></a>
+        <a class="card" href="#compress"><span class="tile"><svg class="icon" aria-hidden="true"><use href="#i-compress"/></svg></span><h3>Compress PDF</h3><p>Shrink a PDF so it's easier to email or upload.</p><span class="go link-arrow">Open</span></a>
+        <a class="card" href="#rotate"><span class="tile"><svg class="icon" aria-hidden="true"><use href="#i-rotate"/></svg></span><h3>Rotate PDF</h3><p>Turn every page, or only the ones that are sideways.</p><span class="go link-arrow">Open</span></a>
+        <a class="card" href="#images"><span class="tile"><svg class="icon" aria-hidden="true"><use href="#i-images"/></svg></span><h3>PDF to images</h3><p>Save each page as a PNG or JPG.</p><span class="go link-arrow">Open</span></a>
+        <a class="card" href="#sign"><span class="tile"><svg class="icon" aria-hidden="true"><use href="#i-sign"/></svg></span><h3>Sign PDF</h3><p>Draw your signature and place it on the page.</p><span class="go link-arrow">Open</span></a>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap">
+      <div class="section-head">
+        <div class="zero">0 bytes</div>
+        <h2 style="margin-top:8px">uploaded. Ever.</h2>
+        <p>Many PDF sites work by taking a copy of your document. Paperbench works the other way round: the tool comes to your browser, and your contracts, bank statements and IDs stay where they are.</p>
+      </div>
+      <div class="cols">
+        <div><svg class="icon" aria-hidden="true"><use href="#i-lock"/></svg><h3>We can&rsquo;t peek</h3><p>There is no Paperbench server for your files to go to. We couldn&rsquo;t read them even if we wanted to.</p></div>
+        <div><svg class="icon" aria-hidden="true"><use href="#i-bolt"/></svg><h3>No waiting</h3><p>No upload, no queue, no download. Work starts the moment you drop a file in.</p></div>
+        <div><svg class="icon" aria-hidden="true"><use href="#i-infinity"/></svg><h3>No daily limits</h3><p>Use every tool as often as you like, without creating an account.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap">
+      <div class="section-head"><h2>Fast, because nothing travels.</h2><p>Your file doesn't make a round trip to a server, so most jobs finish before an upload would have started.</p></div>
+      <dl class="stats">
+        <div><dt>to split a 300-page PDF</dt><dd>0.3s</dd></div>
+        <div><dt>to merge 600 pages into one file</dt><dd>0.6s</dd></div>
+        <div><dt>spent uploading or waiting in a queue</dt><dd>0s</dd></div>
+      </dl>
+      <p class="stats-note">Split and merge times measured in Chrome on our test computer with text-only PDFs. Your device and files will vary, and each tool shows you its real time when it finishes.</p>
+    </div>
+  </section>
+
+  <section class="section alt">
+    <div class="wrap">
+      <div class="section-head"><h2>Done in three steps.</h2></div>
+      <ol class="steps">
+        <li><div class="step-top"><span class="tile"><svg class="icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z"/></svg></span><span class="step-num" aria-hidden="true">Step 1</span></div><h3>Pick a tool</h3><p>Merge, split, compress, rotate, convert or sign.</p></li>
+        <li><div class="step-top"><span class="tile"><svg class="icon" aria-hidden="true"><use href="#i-upload"/></svg></span><span class="step-num" aria-hidden="true">Step 2</span></div><h3>Drop in your PDF</h3><p>Drag it onto the page or browse for it. It opens on your device only.</p></li>
+        <li><div class="step-top"><span class="tile"><svg class="icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M12 4v11m0 0l-4.500-4.500M12 15l4.500-4.500M5 19h14"/></svg></span><span class="step-num" aria-hidden="true">Step 3</span></div><h3>Save the result</h3><p>The finished file goes straight to your downloads folder.</p></li>
+      </ol>
+    </div>
+  </section>
+
+  <section class="section band">
+    <div class="wrap">
+      <h2>A whole folder to get through?</h2>
+      <p>Paperbench Pro compresses, rotates and converts many PDFs in one go, and hands them back as a single zip.</p>
+      <a class="btn" href="#pricing">See pricing</a>
+    </div>
+  </section>
+</div>
+
+<!-- ============ Tools ============ -->
+<div class="view page" id="merge" data-title="Merge PDF" hidden>
+  <a class="back" href="#tools">‹ All tools</a>
+  <div class="page-head"><span class="tile"><svg class="icon" aria-hidden="true"><use href="#i-merge"/></svg></span><div><h1 tabindex="-1">Merge PDF</h1><p>Combine several PDFs into one file.</p></div></div>
+  <div class="panel">
+    <label class="drop"><svg class="icon" aria-hidden="true"><use href="#i-upload"/></svg><span class="drop-title">Drop PDFs here or <u>browse</u></span><span class="drop-hint">They're merged in the order you pick them</span><span class="drop-files" aria-live="polite"></span>
+      <input id="merge-files" type="file" accept="application/pdf" multiple aria-label="PDF files to merge"></label>
+    <div class="actions"><button class="btn" id="merge-go" type="button">Merge PDFs</button></div>
+    <div class="status" role="status"></div>
+  </div>
+  <p class="local"><svg class="icon" aria-hidden="true"><use href="#i-lock"/></svg>Processed on your device. Nothing is uploaded.</p>
+</div>
+
+<div class="view page" id="split" data-title="Split PDF" hidden>
+  <a class="back" href="#tools">‹ All tools</a>
+  <div class="page-head"><span class="tile"><svg class="icon" aria-hidden="true"><use href="#i-split"/></svg></span><div><h1 tabindex="-1">Split PDF</h1><p>Pull out the pages you need, or save every page separately.</p></div></div>
+  <div class="panel">
+    <label class="drop"><svg class="icon" aria-hidden="true"><use href="#i-upload"/></svg><span class="drop-title">Drop a PDF here or <u>browse</u></span><span class="drop-files" aria-live="polite"></span>
+      <input id="split-file" type="file" accept="application/pdf" aria-label="PDF file to split"></label>
+    <div class="fields">
+      <div class="field"><label for="split-mode">What to do</label>
+        <select id="split-mode"><option value="extract">Extract pages into one PDF</option><option value="burst">One PDF per page (zip)</option></select></div>
+      <div class="field"><label for="split-pages">Pages</label>
+        <input id="split-pages" type="text" placeholder="e.g. 1-3, 5" inputmode="text" autocomplete="off"></div>
+    </div>
+    <div class="actions"><button class="btn" id="split-go" type="button">Split PDF</button></div>
+    <div class="status" role="status"></div>
+  </div>
+  <p class="local"><svg class="icon" aria-hidden="true"><use href="#i-lock"/></svg>Processed on your device. Nothing is uploaded.</p>
+</div>
+
+<div class="view page" id="compress" data-title="Compress PDF" hidden>
+  <a class="back" href="#tools">‹ All tools</a>
+  <div class="page-head"><span class="tile"><svg class="icon" aria-hidden="true"><use href="#i-compress"/></svg></span><div><h1 tabindex="-1">Compress PDF</h1><p>Shrink a PDF so it's easier to email or upload.</p></div></div>
+  <div class="panel">
+    <label class="drop"><svg class="icon" aria-hidden="true"><use href="#i-upload"/></svg><span class="drop-title">Drop a PDF here or <u>browse</u></span><span class="drop-hint"><span class="pro-tag">Pro:</span> drop several at once</span><span class="drop-files" aria-live="polite"></span>
+      <input id="compress-file" type="file" accept="application/pdf" multiple aria-label="PDF file to compress"></label>
+    <div class="field"><label for="compress-mode">Compression level</label>
+      <select id="compress-mode">
+        <option value="lossless">Light: keeps text selectable</option>
+        <option value="0.7">Strong: pages become images</option>
+        <option value="0.45">Extreme: smallest file, lower quality</option>
+      </select></div>
+    <div class="actions"><button class="btn" id="compress-go" type="button">Compress PDF</button></div>
+    <div class="status" role="status"></div>
+  </div>
+  <p class="local"><svg class="icon" aria-hidden="true"><use href="#i-lock"/></svg>Processed on your device. Nothing is uploaded.</p>
+</div>
+
+<div class="view page" id="rotate" data-title="Rotate PDF" hidden>
+  <a class="back" href="#tools">‹ All tools</a>
+  <div class="page-head"><span class="tile"><svg class="icon" aria-hidden="true"><use href="#i-rotate"/></svg></span><div><h1 tabindex="-1">Rotate PDF</h1><p>Turn every page, or only the ones that are sideways.</p></div></div>
+  <div class="panel">
+    <label class="drop"><svg class="icon" aria-hidden="true"><use href="#i-upload"/></svg><span class="drop-title">Drop a PDF here or <u>browse</u></span><span class="drop-hint"><span class="pro-tag">Pro:</span> drop several at once</span><span class="drop-files" aria-live="polite"></span>
+      <input id="rotate-file" type="file" accept="application/pdf" multiple aria-label="PDF file to rotate"></label>
+    <div class="fields">
+      <div class="field"><label for="rotate-deg">Turn</label>
+        <select id="rotate-deg"><option value="90">90° clockwise</option><option value="180">180°</option><option value="270">90° counter-clockwise</option></select></div>
+      <div class="field"><label for="rotate-pages">Pages</label>
+        <input id="rotate-pages" type="text" placeholder="All pages" autocomplete="off"></div>
+    </div>
+    <div class="actions"><button class="btn" id="rotate-go" type="button">Rotate PDF</button></div>
+    <div class="status" role="status"></div>
+  </div>
+  <p class="local"><svg class="icon" aria-hidden="true"><use href="#i-lock"/></svg>Processed on your device. Nothing is uploaded.</p>
+</div>
+
+<div class="view page" id="images" data-title="PDF to images" hidden>
+  <a class="back" href="#tools">‹ All tools</a>
+  <div class="page-head"><span class="tile"><svg class="icon" aria-hidden="true"><use href="#i-images"/></svg></span><div><h1 tabindex="-1">PDF to images</h1><p>Save each page as a PNG or JPG.</p></div></div>
+  <div class="panel">
+    <label class="drop"><svg class="icon" aria-hidden="true"><use href="#i-upload"/></svg><span class="drop-title">Drop a PDF here or <u>browse</u></span><span class="drop-hint"><span class="pro-tag">Pro:</span> drop several at once</span><span class="drop-files" aria-live="polite"></span>
+      <input id="images-file" type="file" accept="application/pdf" multiple aria-label="PDF file to convert"></label>
+    <div class="fields">
+      <div class="field"><label for="images-fmt">Format</label>
+        <select id="images-fmt"><option value="image/png">PNG</option><option value="image/jpeg">JPG</option></select></div>
+      <div class="field"><label for="images-scale">Quality</label>
+        <select id="images-scale"><option value="1">Screen (72 dpi)</option><option value="2" selected>Standard (144 dpi)</option><option value="4">Print (288 dpi)</option></select></div>
+    </div>
+    <div class="actions"><button class="btn" id="images-go" type="button">Convert to images</button></div>
+    <div class="status" role="status"></div>
+  </div>
+  <p class="local"><svg class="icon" aria-hidden="true"><use href="#i-lock"/></svg>Processed on your device. Nothing is uploaded.</p>
+</div>
+
+<div class="view page" id="sign" data-title="Sign PDF" hidden>
+  <a class="back" href="#tools">‹ All tools</a>
+  <div class="page-head"><span class="tile"><svg class="icon" aria-hidden="true"><use href="#i-sign"/></svg></span><div><h1 tabindex="-1">Sign PDF</h1><p>Draw your signature and place it on the page.</p></div></div>
+  <div class="panel">
+    <span class="label">1. Draw your signature</span>
+    <canvas id="sig-pad" width="600" height="180" aria-label="Signature drawing area"></canvas>
+    <div class="actions" style="margin-top:10px"><button class="btn ghost small" id="sig-clear" type="button">Clear</button></div>
+    <div class="field"><span class="label">2. Choose the PDF</span>
+      <label class="drop"><svg class="icon" aria-hidden="true"><use href="#i-upload"/></svg><span class="drop-title">Drop a PDF here or <u>browse</u></span><span class="drop-files" aria-live="polite"></span>
+        <input id="sign-file" type="file" accept="application/pdf" aria-label="PDF file to sign"></label></div>
+    <div class="fields">
+      <div class="field"><label for="sign-page">Page</label><input id="sign-page" type="number" min="1" value="1"></div>
+      <div class="field"><label for="sign-width">Signature width (points)</label><input id="sign-width" type="number" min="20" value="150"></div>
+    </div>
+    <div class="field"><span class="label">3. Click where the signature goes</span>
+      <canvas id="sig-preview" width="1" height="1" hidden></canvas>
+      <p class="muted hint" id="sig-empty">The page appears here once you choose a PDF.</p></div>
+    <div class="actions"><button class="btn" id="sign-go" type="button">Sign and download</button></div>
+    <div class="status" role="status"></div>
+  </div>
+  <p class="local"><svg class="icon" aria-hidden="true"><use href="#i-lock"/></svg>Processed on your device. Nothing is uploaded.</p>
+</div>
+
+<!-- ============ Pricing ============ -->
+<div class="view" id="pricing" data-title="Pricing" hidden>
+  <section class="section wrap">
+    <div class="section-head"><h1 tabindex="-1" style="font-size:clamp(36px,6vw,56px);font-weight:800;letter-spacing:-.04em">Free for one file.<br>Pro for the whole folder.</h1><p>Every tool is free with no daily limit. Pro adds batch processing.</p></div>
+    <div class="plans">
+      <div class="plan">
+        <h2>Free</h2>
+        <div class="price">Rs 0</div>
+        <p class="sub">No account needed.</p>
+        <ul>
+          <li><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg>All six PDF tools</li>
+          <li><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg>No daily limit</li>
+          <li><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg>Files never leave your device</li>
+          <li><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg>Merge any number of PDFs</li>
+        </ul>
+        <a class="btn ghost" href="#tools">Start using it</a>
+      </div>
+      <div class="plan pro">
+        <h2>Pro</h2>
+        <div class="price">Rs 500 <small>/ month</small></div>
+        <p class="sub">or Rs 4,000 a year (save 33%).</p>
+        <ul>
+          <li><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg>Everything in Free</li>
+          <li><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg>Compress, rotate and convert many PDFs at once</li>
+          <li><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg>Results delivered as one zip</li>
+          <li><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg>Use it in up to 3 browsers</li>
+          <li><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg>Cancel any time</li>
+        </ul>
+        <button class="btn" type="button" data-pro>Get Pro</button>
+      </div>
+    </div>
+  </section>
+  <section class="section alt">
+    <div class="wrap faq">
+      <div class="section-head"><h2>Questions</h2></div>
+      <details><summary>Are my files uploaded anywhere?</summary><p>No. Your PDF is opened and processed inside your browser, on your own device. Paperbench has no server that receives files.</p></details>
+      <details><summary>Is it really free?</summary><p>Yes. All six tools are free with no daily limit and no account. Free handles one file at a time (Merge takes as many as you like).</p></details>
+      <details><summary>What does Pro add?</summary><p>Batch processing. Drop many PDFs into Compress, Rotate or PDF to images and get them all back in one zip.</p></details>
+      <details><summary>How do I activate Pro?</summary><p>After you pay, you get a license key by email. Click Go Pro, paste the key and choose Activate. One key works in up to 3 browsers.</p></details>
+      <details><summary>Can I cancel?</summary><p>Yes, any time. Once you cancel, you won't be charged again.</p></details>
+      <details><summary>Will compressing change my document?</summary><p>Light compression keeps everything as it is. Strong and Extreme turn each page into an image, which makes files much smaller but means text can no longer be selected or searched.</p></details>
+      <details><summary>How big a file can I use?</summary><p>There's no fixed limit. Because the work happens on your device, very large files depend on how much memory it has and may take longer.</p></details>
+    </div>
+  </section>
+</div>
+
+<!-- ============ Privacy ============ -->
+<div class="view page prose" id="privacy" data-title="Privacy" hidden>
+  <h1 tabindex="-1">Privacy</h1>
+  <p class="muted" style="margin-top:10px">Last updated November 2026</p>
+  <h2>Your files</h2>
+  <p>Your PDFs are opened and processed in your browser, on your device. They are never sent to Paperbench or to anyone else. There is no Paperbench server that receives files.</p>
+  <h2>Accounts, cookies and tracking</h2>
+  <p>Paperbench has no accounts, sets no cookies and uses no analytics or advertising trackers.</p>
+  <h2>What is stored in your browser</h2>
+  <p>If you activate Pro, your license key is saved in this browser so you stay signed in to Pro. Choosing "Remove from this browser" deletes it.</p>
+  <h2>Other services involved</h2>
+  <ul>
+    <li><b>Lemon Squeezy</b> handles payments and license keys. When you activate Pro, and about once a day afterwards, your browser sends your license key to Lemon Squeezy to confirm it is still valid. Paperbench never sees your card details.</li>
+    <li><b>Code libraries and the font</b> are loaded from the public networks cdnjs, jsDelivr and Google Fonts. As with any web request, they receive your IP address and browser type. They never receive your files.</li>
+    <li><b>Our web host</b> serves the site's pages and may keep standard access logs.</li>
+  </ul>
+</div>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>© 2026 Paperbench. Your files stay on your device.</span>
+    <nav aria-label="Footer"><a href="#tools">Tools</a><a href="#pricing">Pricing</a><a href="#privacy">Privacy</a></nav>
+  </div>
+</footer>
+
+<dialog id="pro" aria-labelledby="pro-title">
+  <button class="x" id="pro-close" type="button" aria-label="Close">×</button>
+  <h2 id="pro-title">Paperbench Pro</h2>
+  <div id="pro-pitch">
+    <p><b style="color:var(--ink)">Rs 500 a month or Rs 4,000 a year.</b> Compress, rotate and convert many PDFs at once, delivered as one zip. Everything still runs on your device.</p>
+    <div class="actions"><a id="pro-buy" class="btn" href="#" target="_blank" rel="noopener">Buy Pro</a></div>
+    <p class="hint" id="pro-soon" hidden>Checkout isn't open yet. Please check back soon.</p>
+    <p class="hint">Paying with a Pakistani card? Turn on international online payments in your banking app first.</p>
+    <div class="field"><label for="pro-key">Already bought? Paste your license key</label>
+      <input id="pro-key" type="text" placeholder="XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX" autocomplete="off" spellcheck="false"></div>
+    <div class="actions"><button class="btn ghost" id="pro-activate" type="button">Activate</button></div>
+  </div>
+  <div id="pro-on" hidden>
+    <p>Pro is active in this browser.</p>
+    <div class="actions"><button class="btn ghost" id="pro-remove" type="button">Remove from this browser</button></div>
+  </div>
+  <div class="status" id="pro-status" role="status"></div>
+</dialog>
+
+<div class="toasts" id="toasts" aria-live="polite"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="app.js?v=14"></script>
+</body>
+</html>
