@@ -441,6 +441,141 @@ if (typeof document !== 'undefined') {
     return { out: [[`${base(f)}.txt`, new Blob([text], { type: 'text/plain' })]], msg: `Copied out about ${words} word${words === 1 ? '' : 's'} from ${pdf.numPages} page${pdf.numPages === 1 ? '' : 's'}.` };
   });
 
+  // --- Markdown to PDF ---
+  // marked (loaded on first use) splits the Markdown into tokens; the layout below draws them with pdf-lib, so the
+  // result is real, selectable text, not a picture of the page.
+  // ponytail: uses the standard PDF fonts, so letters outside English and Western European (Urdu, emoji) become "?",
+  // and images are skipped. Embed a Unicode font and fetch images if people ask for them.
+  async function markdownToPdf(md, [pw, ph]) {
+    if (!window.marked) await loadScript('https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js');
+    const doc = await PDFDocument.create(), F = {};
+    for (const [k, n] of Object.entries({ r: 'Helvetica', b: 'HelveticaBold', i: 'HelveticaOblique', bi: 'HelveticaBoldOblique', m: 'Courier', mb: 'CourierBold' })) F[k] = await doc.embedFont(StandardFonts[n]);
+    const M = 56, W = pw - 2 * M;
+    const ink = rgb(0.1, 0.1, 0.12), grey = rgb(0.45, 0.45, 0.5), rule = rgb(0.82, 0.82, 0.85), shade = rgb(0.95, 0.95, 0.96), blue = rgb(0.1, 0.33, 0.78);
+    let page = doc.addPage([pw, ph]), y = ph - M, bad = 0; // y is the top of the next line
+    const room = h => { if (y - h < M) { page = doc.addPage([pw, ph]); y = ph - M; } };
+    const ENT = { amp: '&', lt: '<', gt: '>', quot: '"', '#39': '\'' };
+    const safe = s => String(s).replace(/&(amp|lt|gt|quot|#39);/g, (_, e) => ENT[e]).replace(/\t/g, '    ')
+      .replace(/[^\x20-\x7E\xA0-\xFF‘’“”–—…€•™\n]/gu, () => { bad++; return '?'; });
+
+    // Inline tokens -> flat list of styled pieces.
+    const runs = (tokens, st = {}) => (tokens || []).flatMap(t =>
+      t.type === 'strong' ? runs(t.tokens, { ...st, b: 1 })
+        : t.type === 'em' ? runs(t.tokens, { ...st, i: 1 })
+        : t.type === 'link' ? runs(t.tokens, { ...st, link: 1 })
+        : t.type === 'codespan' ? [{ ...st, code: 1, text: safe(t.text) }]
+        : t.type === 'br' ? [{ ...st, text: '\n' }]
+        : t.type === 'image' ? [{ ...st, i: 1, text: safe(t.text ? `[image: ${t.text}]` : '[image]') }]
+        : t.tokens ? runs(t.tokens, st)
+        : [{ ...st, text: safe(t.text ?? t.raw ?? '').replace(/\n/g, ' ') }]);
+    const fontOf = r => r.code ? (r.b ? F.mb : F.m) : r.b && r.i ? F.bi : r.b ? F.b : r.i ? F.i : F.r;
+
+    // Draws styled pieces as wrapped lines at x, within width w.
+    function text(rs, x, w, size, color = ink) {
+      const lead = size * 1.45;
+      let line = [], lw = 0;
+      const flush = () => {
+        room(lead); y -= lead;
+        let cx = x;
+        const base = y + lead * 0.28;
+        for (const p of line) {
+          page.drawText(p.s, { x: cx, y: base, size: p.size, font: p.font, color: p.link ? blue : color });
+          if (p.link) page.drawLine({ start: { x: cx, y: base - 1.5 }, end: { x: cx + p.w, y: base - 1.5 }, thickness: 0.6, color: blue });
+          cx += p.w;
+        }
+        line = []; lw = 0;
+      };
+      const add = (s, font, fs, link) => { const pw2 = font.widthOfTextAtSize(s, fs); line.push({ s, font, size: fs, w: pw2, link }); lw += pw2; };
+      for (const r of rs) {
+        const font = fontOf(r), fs = r.code ? size * 0.92 : size;
+        for (const raw of r.text.split(/(\n|\s+)/).filter(Boolean)) {
+          if (raw === '\n') { flush(); continue; }
+          const space = /^\s+$/.test(raw);
+          if (space) { if (line.length) add(' ', font, fs, r.link); continue; }
+          let word = raw;
+          if (line.length && lw + font.widthOfTextAtSize(word, fs) > w) flush();
+          while (font.widthOfTextAtSize(word, fs) > w) { // a word wider than the line: cut it
+            let n = word.length;
+            while (n > 1 && font.widthOfTextAtSize(word.slice(0, n), fs) > w) n--;
+            add(word.slice(0, n), font, fs, r.link); flush();
+            word = word.slice(n);
+          }
+          add(word, font, fs, r.link);
+        }
+      }
+      if (line.length) flush();
+    }
+
+    function blocks(tokens, x, w) {
+      for (const t of tokens) {
+        if (t.type === 'heading') {
+          const size = [24, 19, 15.5, 13.5, 12, 11][t.depth - 1];
+          y -= size * 0.6; room(size * 2.4);
+          text(runs(t.tokens, { b: 1 }), x, w, size);
+          if (t.depth <= 2) { y -= 5; page.drawLine({ start: { x, y }, end: { x: x + w, y }, thickness: 0.7, color: rule }); }
+          y -= 7;
+        } else if (t.type === 'paragraph') { text(runs(t.tokens), x, w, 11); y -= 8; }
+        else if (t.type === 'text') { text(runs(t.tokens || [t]), x, w, 11); y -= 3; } // the words of a list item
+        else if (t.type === 'list') {
+          t.items.forEach((it, i) => {
+            const lead = 11 * 1.45, mark = it.task ? (it.checked ? '[x]' : '[ ]') : t.ordered ? `${(t.start || 1) + i}.` : '•';
+            room(lead);
+            page.drawText(mark, { x: x + 3, y: y - lead + lead * 0.28, size: 11, font: it.task ? F.m : F.r, color: ink });
+            const indent = it.task ? 26 : t.ordered ? 22 : 16;
+            blocks(it.tokens, x + indent, w - indent);
+          });
+          y -= 6;
+        } else if (t.type === 'code') {
+          const size = 9.5, lead = size * 1.42, max = Math.max(10, Math.floor((w - 20) / F.m.widthOfTextAtSize('M', size)));
+          const lines = safe(t.text).split('\n').flatMap(l => l.length ? l.match(new RegExp(`.{1,${max}}`, 'g')) : ['']);
+          y -= 3;
+          lines.forEach((l, i) => {
+            room(lead); y -= lead;
+            const pad = (i === 0 ? 5 : 0) + (i === lines.length - 1 ? 5 : 0);
+            page.drawRectangle({ x, y: y - (i === lines.length - 1 ? 5 : 0), width: w, height: lead + pad + 0.5, color: shade });
+            page.drawText(l, { x: x + 10, y: y + lead * 0.3, size, font: F.m, color: ink });
+          });
+          y -= 16;
+        } else if (t.type === 'blockquote') {
+          const top = y, started = page;
+          blocks(t.tokens, x + 14, w - 14);
+          if (page === started) page.drawLine({ start: { x: x + 3, y: top - 3 }, end: { x: x + 3, y: y + 7 }, thickness: 2.5, color: rule });
+        } else if (t.type === 'hr') {
+          room(22); y -= 10;
+          page.drawLine({ start: { x, y }, end: { x: x + w, y }, thickness: 0.8, color: rule });
+          y -= 14;
+        } else if (t.type === 'table') {
+          // ponytail: equal-width columns, and a row that reaches the bottom of a page may split awkwardly.
+          const cw = w / t.header.length;
+          [t.header, ...t.rows].forEach((row, ri) => {
+            room(36);
+            const top = y;
+            let low = y;
+            row.forEach((cell, ci) => { y = top - 4; text(runs(cell.tokens, ri ? {} : { b: 1 }), x + ci * cw + 6, cw - 12, 10); low = Math.min(low, y); });
+            y = low - 5;
+            page.drawLine({ start: { x, y }, end: { x: x + w, y }, thickness: ri ? 0.5 : 1, color: rule });
+          });
+          y -= 12;
+        } else if (t.type === 'html') { text([{ text: safe(t.text).replace(/\n/g, ' ') }], x, w, 11, grey); y -= 8; }
+        else if (t.tokens) blocks(t.tokens, x, w);
+      }
+    }
+    blocks(window.marked.lexer(md), M, W);
+    return { bytes: await doc.save(), pages: doc.getPageCount(), bad };
+  }
+  $('md2pdf-file').addEventListener('change', async () => {
+    const f = $('md2pdf-file').files[0];
+    if (f) $('md2pdf-text').value = await f.text();
+  });
+  tool('md2pdf', async () => {
+    const md = $('md2pdf-text').value;
+    if (!md.trim()) throw new Error('Paste some Markdown or choose a .md file first');
+    const f = $('md2pdf-file').files[0];
+    const r = await markdownToPdf(md, PAGE[$('md2pdf-size').value]);
+    download(r.bytes, `${f ? f.name.replace(/\.[^.]+$/, '') : 'document'}.pdf`);
+    return `Made a ${r.pages}-page PDF.${r.bad ? ` ${r.bad} unsupported character${r.bad === 1 ? '' : 's'} became "?".` : ''}`;
+  });
+
   // ===== Pro tools =====
 
   // --- Organize pages: thumbnails you can drag, nudge or remove ---

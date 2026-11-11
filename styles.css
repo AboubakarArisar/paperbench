@@ -304,3 +304,7 @@ input.edit-input { width: auto; position: absolute; z-index: 2; transform: trans
 .sub-head { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; margin: 44px 0 16px; }
 .sub-head h3 { font-size: 22px; font-weight: 800; letter-spacing: -.03em; }
 .sub-head a { font-size: 15px; }
+
+/* Markdown to PDF */
+textarea { display: block; width: 100%; min-height: 220px; padding: 12px 14px; resize: vertical; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-sm); font: 14px/1.5 ui-monospace, "Cascadia Code", Consolas, monospace; }
+textarea:focus-visible { outline-offset: 0; border-color: var(--accent); border-radius: var(--r-sm); }
