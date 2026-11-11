@@ -29,7 +29,49 @@ function parseRanges(str, n) {
   return out;
 }
 
-if (typeof module !== 'undefined') module.exports = { parseRanges, isProResponse };
+// --- Edit text helpers (no browser needed, so they can be self-checked) ---
+
+// Groups text objects into the lines a person would see. Pure function of the objects, so the same page always
+// gives the same lines in the same order (edits are addressed by line index).
+function groupLines(objs) {
+  // ponytail: only horizontal text is editable; rotated or skewed text is left alone.
+  const flat = objs.filter(o => Math.abs(o.m[1]) < 1e-3 * Math.abs(o.m[0] || 1) && Math.abs(o.m[2]) < 1e-3 * Math.abs(o.m[3] || 1) && o.m[0] > 0);
+  flat.sort((a, b) => (b.m[5] - a.m[5]) || (a.l - b.l));
+  const lines = [];
+  for (const o of flat) {
+    const line = lines.find(L => {
+      const last = L.objs[L.objs.length - 1], gap = o.l - last.r;
+      if (Math.abs(L.base - o.m[5]) > 0.2 * o.size || Math.abs(L.size - o.size) > 0.06 * o.size) return false;
+      if (gap < -0.5 * o.size || gap > 1.2 * o.size) return false;
+      // Don't join across something sitting in the gap (a footnote mark, a symbol in another font).
+      return !flat.some(x => x !== o && !L.objs.includes(x) && x.l >= last.r - 0.5 && x.r <= o.l + 0.5 && x.b < last.t + o.size && x.t > last.b - o.size * 0.5);
+    });
+    if (line) line.objs.push(o);
+    else lines.push({ objs: [o], base: o.m[5], size: o.size });
+  }
+  for (const L of lines) {
+    L.objs.sort((a, b) => a.l - b.l);
+    L.text = L.objs.reduce((s, o, i) => {
+      if (!i) return o.text;
+      const gap = o.l - L.objs[i - 1].r;
+      return s + (gap > 0.15 * L.size && !/\s$/.test(s) && !/^\s/.test(o.text) ? ' ' : '') + o.text;
+    }, '').replace(/\s+/g, ' ').trim();
+    L.l = Math.min(...L.objs.map(o => o.l)); L.r = Math.max(...L.objs.map(o => o.r));
+    L.b = Math.min(...L.objs.map(o => o.b)); L.t = Math.max(...L.objs.map(o => o.t));
+  }
+  return lines;
+}
+
+// A standard font that looks roughly like the named one.
+function similarFont(name) {
+  const bold = /bold|black|heavy|medi|semi|demi/i.test(name), ital = /ital|obli/i.test(name);
+  if (/courier|mono|consol|typewriter|cmtt/i.test(name)) return `Courier${bold || ital ? '-' : ''}${bold ? 'Bold' : ''}${ital ? 'Oblique' : ''}`;
+  if (/times|roman|serif|georgia|garamond|minion|cambria|book|palat|nimbusrom|cmr|charter/i.test(name) && !/sans/i.test(name))
+    return bold && ital ? 'Times-BoldItalic' : bold ? 'Times-Bold' : ital ? 'Times-Italic' : 'Times-Roman';
+  return `Helvetica${bold || ital ? '-' : ''}${bold ? 'Bold' : ''}${ital ? 'Oblique' : ''}`;
+}
+
+if (typeof module !== 'undefined') module.exports = { parseRanges, isProResponse, groupLines, similarFont };
 
 if (typeof document !== 'undefined') {
   const { PDFDocument, StandardFonts, degrees, radians, rgb } = PDFLib;
@@ -473,6 +515,228 @@ if (typeof document !== 'undefined') {
     });
     return { out: [[`${base(f)}-numbered.pdf`, await doc.save()]], msg: `Numbered ${pages.length} page${pages.length === 1 ? '' : 's'}.` };
   }, 'Page numbers');
+
+  // --- Edit text: change the real text of a PDF with PDFium (Chrome's PDF engine, compiled for the browser) ---
+  // pdf-lib and pdf.js can't rewrite existing text, so this tool loads PDFium on first use.
+  // How an edit works: the text objects that make up the clicked line are removed and new ones are drawn in their
+  // place. The original font is kept when it has every letter needed; otherwise a similar standard font is used.
+  const PDFIUM = 'https://cdn.jsdelivr.net/npm/@embedpdf/pdfium@2.15.1';
+  let pdfiumLoading = null;
+  const pdfium = () => pdfiumLoading ||= (async () => {
+    const [{ init }, wasmBinary] = await Promise.all([
+      import(`${PDFIUM}/+esm`),
+      fetch(`${PDFIUM}/dist/pdfium.wasm`).then(r => { if (!r.ok) throw new Error('engine'); return r.arrayBuffer(); }),
+    ]);
+    const P = await init({ wasmBinary });
+    P.PDFiumExt_Init();
+    return P;
+  })().catch(() => { pdfiumLoading = null; throw new Error('Couldn\'t download the editing engine. Check your connection and try again.'); });
+
+  // Letters the standard PDF fonts can draw (Latin-1 plus common punctuation).
+  const LATIN = /^[\x20-\x7E\xA0-\xFF‘’“”–—…€•™]*$/;
+  const clean = s => s.replace(/\u0002/g, '-').replace(/[\u0000-\u001F￾￿]/g, ''); // \u0002 is PDFium's end-of-line hyphen
+
+  // Opens `bytes` in PDFium, runs fn(doc), always closes. Returns fn's result.
+  function withDoc(P, bytes, fn) {
+    const M = P.pdfium, mem = M.wasmExports.malloc(bytes.length);
+    M.HEAPU8.set(bytes, mem);
+    const doc = P.FPDF_LoadMemDocument(mem, bytes.length, '');
+    try {
+      if (!doc) throw new Error('This PDF couldn\'t be opened for editing. It may be password-protected.');
+      return fn(doc);
+    } finally { if (doc) P.FPDF_CloseDocument(doc); M.wasmExports.free(mem); }
+  }
+  function saveDoc(P, doc) {
+    const M = P.pdfium, w = P.PDFiumExt_OpenFileWriter();
+    P.PDFiumExt_SaveAsCopy(doc, w);
+    const size = P.PDFiumExt_GetFileWriterSize(w), buf = M.wasmExports.malloc(size);
+    P.PDFiumExt_GetFileWriterData(w, buf, size);
+    const out = M.HEAPU8.slice(buf, buf + size);
+    M.wasmExports.free(buf);
+    P.PDFiumExt_CloseFileWriter(w);
+    return out;
+  }
+  // Scratch memory for reading floats and strings out of PDFium.
+  function scratch(P, bytes, fn) {
+    const M = P.pdfium, p = M.wasmExports.malloc(bytes);
+    try { return fn(p, i => M.HEAPF32[(p >> 2) + i], i => M.HEAPU32[(p >> 2) + i]); } finally { M.wasmExports.free(p); }
+  }
+  const boundsOf = (P, obj) => scratch(P, 16, (p, f) => (P.FPDFPageObj_GetBounds(obj, p, p + 4, p + 8, p + 12), { l: f(0), b: f(1), r: f(2), t: f(3) }));
+  function setObjText(P, obj, text) {
+    const M = P.pdfium, n = (text.length + 1) * 2, w = M.wasmExports.malloc(n);
+    M.stringToUTF16(text, w, n);
+    const ok = P.FPDFText_SetText(obj, w);
+    M.wasmExports.free(w);
+    return ok;
+  }
+
+  // Every text object on a page: its text, font, size, matrix [a b c d e f] and box, in PDF page coordinates.
+  function readText(P, doc, pageIndex) {
+    const M = P.pdfium, page = P.FPDF_LoadPage(doc, pageIndex), tp = P.FPDFText_LoadPage(page), objs = [];
+    for (let i = 0, n = P.FPDFPage_CountObjects(page); i < n; i++) {
+      const obj = P.FPDFPage_GetObject(page, i);
+      if (P.FPDFPageObj_GetType(obj) !== 1) continue; // 1 = text
+      const len = P.FPDFTextObj_GetText(obj, tp, 0, 0);
+      const text = clean(scratch(P, len + 2, p => (P.FPDFTextObj_GetText(obj, tp, p, len), M.UTF16ToString(p))));
+      if (!text.trim()) continue;
+      const font = P.FPDFTextObj_GetFont(obj);
+      const fontName = scratch(P, 256, p => { const k = P.FPDFFont_GetBaseFontName(font, p, 256); return new TextDecoder().decode(M.HEAPU8.slice(p, p + Math.max(0, k - 1))); });
+      const m = scratch(P, 24, (p, f) => (P.FPDFPageObj_GetMatrix(obj, p), [0, 1, 2, 3, 4, 5].map(f)));
+      const fontSize = scratch(P, 4, (p, f) => (P.FPDFTextObj_GetFontSize(obj, p), f(0)));
+      objs.push({ obj, text, font, fontName, embedded: !!P.FPDFFont_GetIsEmbedded(font), m, fontSize, size: fontSize * Math.hypot(m[2], m[3]), ...boundsOf(P, obj) });
+    }
+    return { page, objs, close() { P.FPDFText_ClosePage(tp); P.FPDF_ClosePage(page); } };
+  }
+
+  // Replaces line `lineIndex` on a page with `newText`. `known` maps a font name to the letters that font is known
+  // to contain (every letter the document already draws with it). Returns the new file and what had to give.
+  function editLine(P, bytes, pageIndex, lineIndex, newText, known) {
+    return withDoc(P, bytes, doc => {
+      const { page, objs, close } = readText(P, doc, pageIndex);
+      try {
+        const line = groupLines(objs)[lineIndex];
+        if (!line) throw new Error('That line is no longer there. Try again.');
+        const first = line.objs[0], words = newText.split(/\s+/).filter(Boolean);
+        const color = scratch(P, 16, (p, f, u) => (P.FPDFPageObj_GetFillColor(first.obj, p, p + 4, p + 8, p + 12), [0, 1, 2, 3].map(u)));
+        // Draws `text` in `font` starting at page x; returns the new object's box.
+        const draw = (text, font, x) => {
+          const o = P.FPDFPageObj_CreateTextObj(doc, font, first.fontSize);
+          if (!o || !setObjText(P, o, text)) throw new Error('This line couldn\'t be changed.');
+          const M = P.pdfium, mp = M.wasmExports.malloc(24);
+          [first.m[0], first.m[1], first.m[2], first.m[3], x, first.m[5]].forEach((v, i) => { M.HEAPF32[(mp >> 2) + i] = v; });
+          P.FPDFPageObj_SetMatrix(o, mp);
+          M.wasmExports.free(mp);
+          P.FPDFPageObj_SetFillColor(o, ...color);
+          P.FPDFPage_InsertObject(page, o);
+          return boundsOf(P, o);
+        };
+        const have = known.get(first.fontName) || new Set();
+        const original = !first.embedded ? LATIN.test(newText) : [...newText.replace(/\s/g, '')].every(c => have.has(c));
+        let substituted = false, right;
+        if (original && !first.embedded) {
+          right = draw(words.join(' '), first.font, first.m[4]).r; // standard font: has a real space, one object is enough
+        } else if (original) {
+          // Embedded fonts often have no usable space character, so place each word ourselves.
+          // The gap between words is taken from the original line where possible.
+          const oldWords = line.text.split(' ').filter(Boolean);
+          let gap = 0.27 * line.size;
+          if (oldWords.length > 1 && oldWords.every(w => [...w].every(c => have.has(c)))) {
+            const widths = oldWords.map(w => { const o = P.FPDFPageObj_CreateTextObj(doc, first.font, first.fontSize); setObjText(P, o, w); P.FPDFPage_InsertObject(page, o); const b = boundsOf(P, o); P.FPDFPage_RemoveObject(page, o); P.FPDFPageObj_Destroy(o); return (b.r - b.l) * Math.hypot(first.m[0], first.m[1]); });
+            const g = (line.r - line.l - widths.reduce((a, b) => a + b, 0)) / (oldWords.length - 1);
+            if (g > 0.12 * line.size && g < 0.7 * line.size) gap = g;
+          }
+          let x = first.m[4];
+          for (const w of words) { const b = draw(w, first.font, x); x += (b.r - b.l) + gap; right = b.r; }
+        } else {
+          if (!LATIN.test(newText)) throw new Error('This document\'s font doesn\'t have some of those letters, and only English and Western European letters can be added for now.');
+          right = draw(words.join(' '), P.FPDFText_LoadStandardFont(doc, similarFont(first.fontName)), first.m[4]).r;
+          substituted = true;
+        }
+        for (const o of line.objs) { P.FPDFPage_RemoveObject(page, o.obj); P.FPDFPageObj_Destroy(o.obj); }
+        if (!P.FPDFPage_GenerateContent(page)) throw new Error('This page couldn\'t be saved after the change.');
+        return { bytes: saveDoc(P, doc), substituted, overflow: right > P.FPDF_GetPageWidthF(page) - 4 };
+      } finally { close(); }
+    });
+  }
+
+  // UI state for the Edit text tool.
+  let ed = null; // { name, bytes, undo: [bytes…], page (0-based), pages, lines, vp, known }
+  const stage = $('edit-stage'), edCanvas = $('edit-canvas'), edLines = $('edit-lines');
+  async function showEditPage() {
+    const P = await pdfium(), mine = ed;
+    const pdf = await openJs(ed.bytes.buffer.slice(ed.bytes.byteOffset, ed.bytes.byteOffset + ed.bytes.byteLength));
+    const page = await pdf.getPage(ed.page + 1);
+    const vp = page.getViewport({ scale: Math.min(2, 1100 / page.getViewport({ scale: 1 }).width) });
+    const c = document.createElement('canvas');
+    c.width = Math.ceil(vp.width); c.height = Math.ceil(vp.height);
+    await page.render({ canvasContext: c.getContext('2d'), viewport: vp, intent: 'print' }).promise;
+    if (ed !== mine) return; // another file was chosen while rendering
+    edCanvas.width = c.width; edCanvas.height = c.height;
+    edCanvas.getContext('2d').drawImage(c, 0, 0);
+    ed.vp = vp;
+    ed.lines = withDoc(P, ed.bytes, doc => { const t = readText(P, doc, ed.page); try { return groupLines(t.objs).map(({ text, l, b, r, t: top, size }) => ({ text, l, b, r, t: top, size })); } finally { t.close(); } });
+    edLines.replaceChildren(...ed.lines.map((L, i) => {
+      const [x1, y1] = vp.convertToViewportPoint(L.l, L.t), [x2, y2] = vp.convertToViewportPoint(L.r, L.b);
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'edit-line'; b.dataset.i = i;
+      b.setAttribute('aria-label', `Edit line: ${L.text}`);
+      const pad = 2;
+      b.style.cssText = `left:${(Math.min(x1, x2) - pad) / c.width * 100}%;top:${(Math.min(y1, y2) - pad) / c.height * 100}%;width:${(Math.abs(x2 - x1) + pad * 2) / c.width * 100}%;height:${(Math.abs(y2 - y1) + pad * 2) / c.height * 100}%`;
+      return b;
+    }));
+    $('edit-pageinfo').textContent = `Page ${ed.page + 1} of ${ed.pages}`;
+    $('edit-prev').disabled = ed.page === 0;
+    $('edit-next').disabled = ed.page >= ed.pages - 1;
+    $('edit-undo').disabled = !ed.undo.length;
+    $('edit-hint').textContent = ed.lines.length ? 'Click a line to change it. Press Enter to apply, Esc to cancel.'
+      : 'There is no editable text on this page. If it\'s a scan, there are no letters to change.';
+  }
+  const editBusy = async fn => {
+    try { await fn(); } catch (e) { toast(e.message || 'Something went wrong.', 'error'); }
+  };
+  $('edit-file').addEventListener('change', () => editBusy(async () => {
+    const f = $('edit-file').files[0];
+    ed = null; $('edit-area').hidden = true; edLines.replaceChildren();
+    if (!f) return;
+    const t = toast('Opening the editor…', 'loading');
+    try {
+      const P = await pdfium(), bytes = new Uint8Array(await f.arrayBuffer());
+      // Which letters each font is known to contain, from the text already in the document.
+      // ponytail: reads up to 60 pages; a letter used only on a later page falls back to the similar font.
+      const info = withDoc(P, bytes, doc => {
+        const pages = P.FPDF_GetPageCount(doc), known = new Map();
+        for (let i = 0; i < Math.min(pages, 60); i++) {
+          const t = readText(P, doc, i);
+          for (const o of t.objs) { if (!known.has(o.fontName)) known.set(o.fontName, new Set()); for (const ch of o.text) known.get(o.fontName).add(ch); }
+          t.close();
+        }
+        return { pages, known };
+      });
+      if ($('edit-file').files[0] !== f) return;
+      ed = { name: f.name, bytes, undo: [], page: 0, ...info };
+      $('edit-area').hidden = false;
+      await showEditPage();
+      t.onclick();
+    } catch (e) { toast(/open|engine|connection/i.test(e.message) ? e.message : 'That file isn\'t a valid PDF.', 'error', t); }
+  }));
+  $('edit-prev').onclick = () => editBusy(async () => { ed.page--; await showEditPage(); });
+  $('edit-next').onclick = () => editBusy(async () => { ed.page++; await showEditPage(); });
+  $('edit-undo').onclick = () => editBusy(async () => { ed.bytes = ed.undo.pop(); await showEditPage(); toast('Undone.'); });
+  edLines.onclick = e => {
+    const b = e.target.closest('.edit-line');
+    if (!b || stage.querySelector('.edit-input')) return;
+    const i = +b.dataset.i, L = ed.lines[i], input = document.createElement('input');
+    input.className = 'edit-input'; input.type = 'text'; input.value = L.text; input.spellcheck = false;
+    input.setAttribute('aria-label', 'New text for this line');
+    const shown = stage.clientWidth / edCanvas.width;
+    input.style.cssText = `left:${b.style.left};top:${b.style.top};min-width:max(${b.style.width}, 220px);font-size:${Math.max(12, L.size * ed.vp.scale * shown * 0.95)}px`;
+    let done = false;
+    const finish = apply => editBusy(async () => {
+      if (done) return;
+      done = true;
+      const text = input.value.replace(/\s+/g, ' ').trim();
+      input.remove();
+      if (!apply || text === L.text) return;
+      if (!text) throw new Error('Removing a whole line isn\'t supported yet. Keep at least one word.');
+      const P = await pdfium(), r = editLine(P, ed.bytes, ed.page, i, text, ed.known);
+      ed.undo.push(ed.bytes); ed.bytes = r.bytes;
+      await showEditPage();
+      toast(r.substituted ? 'Changed. Some letters aren\'t in this document\'s font, so this line now uses a similar font.'
+        : r.overflow ? 'Changed. The new text is long and may run off the page.' : 'Line changed.');
+    });
+    input.onkeydown = k => { if (k.key === 'Enter') finish(true); else if (k.key === 'Escape') finish(false); };
+    input.onblur = () => finish(true);
+    stage.append(input);
+    input.focus(); input.select();
+  };
+  tool('edit', async () => {
+    fileFrom('edit-file');
+    if (!ed) throw new Error('Still opening the PDF. Try again in a moment.');
+    if (!ed.undo.length) throw new Error('Change some text first: click a line on the page.');
+    needPro('Edit text');
+    download(ed.bytes, `${ed.name.replace(/\.pdf$/i, '')}-edited.pdf`);
+    return `Saved with ${ed.undo.length} line${ed.undo.length === 1 ? '' : 's'} changed.`;
+  });
 
   // --- Sign: draw pad + click-to-place preview ---
   const pad = $('sig-pad'), ctx = pad.getContext('2d');

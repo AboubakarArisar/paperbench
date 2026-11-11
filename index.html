@@ -10,7 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&display=swap">
-<link rel="stylesheet" href="styles.css?v=17">
+<link rel="stylesheet" href="styles.css?v=18">
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
@@ -28,6 +28,7 @@
   <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.500l4.500 4.500L19 7"/></symbol>
   <symbol id="i-bolt" viewBox="0 0 24 24"><path d="M13 3L5 14h6l-1 7 8-11h-6z"/></symbol>
   <symbol id="i-infinity" viewBox="0 0 24 24"><path d="M12 12c-2-3-3.500-4.500-5.500-4.500a4.500 4.500 0 0 0 0 9c2 0 3.500-1.500 5.500-4.500zm0 0c2 3 3.500 4.500 5.500 4.500a4.500 4.500 0 0 0 0-9c-2 0-3.500 1.500-5.500 4.500z"/></symbol>
+  <symbol id="i-edit" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4"/></symbol>
   <symbol id="i-organize" viewBox="0 0 24 24"><rect x="3" y="4" width="7" height="9" rx="1.5"/><rect x="14" y="4" width="7" height="9" rx="1.5"/><path d="M5 18h14m0 0l-3-2.5M19 18l-3 2.5"/></symbol>
   <symbol id="i-ocr" viewBox="0 0 24 24"><path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2M8 9h8M8 12h8M8 15h5"/></symbol>
   <symbol id="i-watermark" viewBox="0 0 24 24"><path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"/></symbol>
@@ -123,8 +124,9 @@
 
   <section class="section">
     <div class="wrap">
-      <div class="section-head"><h2>Four more with Pro.</h2><p>Extra tools for bigger jobs. They run on your device too.</p></div>
+      <div class="section-head"><h2>Five more with Pro.</h2><p>Extra tools for bigger jobs. They run on your device too.</p></div>
       <div class="grid">
+        <a class="card" href="#edit"><span class="pro-badge">Pro</span><span class="tile"><svg class="icon" aria-hidden="true"><use href="#i-edit"/></svg></span><h3>Edit text</h3><p>Change the words in a PDF: fix a date, a name or a sentence.</p><span class="go link-arrow">Open</span></a>
         <a class="card" href="#organize"><span class="pro-badge">Pro</span><span class="tile"><svg class="icon" aria-hidden="true"><use href="#i-organize"/></svg></span><h3>Organize pages</h3><p>Reorder or remove pages by dragging their thumbnails.</p><span class="go link-arrow">Open</span></a>
         <a class="card" href="#ocr"><span class="pro-badge">Pro</span><span class="tile"><svg class="icon" aria-hidden="true"><use href="#i-ocr"/></svg></span><h3>OCR</h3><p>Make a scanned PDF searchable, with text you can select and copy.</p><span class="go link-arrow">Open</span></a>
         <a class="card" href="#watermark"><span class="pro-badge">Pro</span><span class="tile"><svg class="icon" aria-hidden="true"><use href="#i-watermark"/></svg></span><h3>Watermark</h3><p>Stamp text such as Confidential across every page.</p><span class="go link-arrow">Open</span></a>
@@ -251,6 +253,29 @@
 </div>
 
 <!-- ============ Pro tools ============ -->
+<div class="view page page-wide" id="edit" data-title="Edit text" hidden>
+  <a class="back" href="#tools">‹ All tools</a>
+  <div class="page-head"><span class="tile"><svg class="icon" aria-hidden="true"><use href="#i-edit"/></svg></span><div><h1 tabindex="-1">Edit text <span class="pro-badge">Pro</span></h1><p>Change the words in a PDF: fix a date, a name or a sentence.</p></div></div>
+  <div class="panel">
+    <label class="drop"><svg class="icon" aria-hidden="true"><use href="#i-upload"/></svg><span class="drop-title">Drop a PDF here or <u>browse</u></span><span class="drop-hint">The first use downloads the editing engine (about 5 MB)</span><span class="drop-files" aria-live="polite"></span>
+      <input id="edit-file" type="file" accept="application/pdf" aria-label="PDF file to edit"></label>
+    <div id="edit-area" hidden>
+      <div class="edit-bar">
+        <button class="btn ghost small" id="edit-prev" type="button">‹ Previous</button>
+        <span class="muted" id="edit-pageinfo"></span>
+        <button class="btn ghost small" id="edit-next" type="button">Next ›</button>
+        <button class="btn ghost small" id="edit-undo" type="button" disabled>Undo</button>
+      </div>
+      <p class="muted hint" id="edit-hint"></p>
+      <div class="edit-stage" id="edit-stage"><canvas id="edit-canvas" width="1" height="1"></canvas><div id="edit-lines"></div></div>
+    </div>
+    <div class="actions"><button class="btn" id="edit-go" type="button">Save edited PDF</button></div>
+    <div class="status" role="status"></div>
+  </div>
+  <p class="muted hint" style="text-align:center;margin-top:16px">Works on PDFs that contain real text. Scanned pages have no letters to change, and a longer line doesn't push the lines below it down.</p>
+  <p class="local"><svg class="icon" aria-hidden="true"><use href="#i-lock"/></svg>Processed on your device. Nothing is uploaded.</p>
+</div>
+
 <div class="view page" id="organize" data-title="Organize pages" hidden>
   <a class="back" href="#tools">‹ All tools</a>
   <div class="page-head"><span class="tile"><svg class="icon" aria-hidden="true"><use href="#i-organize"/></svg></span><div><h1 tabindex="-1">Organize pages <span class="pro-badge">Pro</span></h1><p>Reorder or remove pages by dragging their thumbnails.</p></div></div>
@@ -316,7 +341,7 @@
 <!-- ============ Pricing ============ -->
 <div class="view" id="pricing" data-title="Pricing" hidden>
   <section class="section wrap">
-    <div class="section-head"><h1 tabindex="-1" style="font-size:clamp(36px,6vw,56px);font-weight:800;letter-spacing:-.04em">Free for one file.<br>Pro for the whole folder.</h1><p>Six tools are free with no daily limit. Pro adds four more tools and batch processing.</p></div>
+    <div class="section-head"><h1 tabindex="-1" style="font-size:clamp(36px,6vw,56px);font-weight:800;letter-spacing:-.04em">Free for one file.<br>Pro for the whole folder.</h1><p>Six tools are free with no daily limit. Pro adds five more tools and batch processing.</p></div>
     <div class="plans">
       <div class="plan">
         <h2>Free</h2>
@@ -336,7 +361,7 @@
         <p class="sub">or Rs 4,000 a year (save 33%).</p>
         <ul>
           <li><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg>Everything in Free</li>
-          <li><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg>Four Pro tools: Organize pages, OCR, Watermark, Page numbers</li>
+          <li><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg>Five Pro tools: Edit text, Organize pages, OCR, Watermark, Page numbers</li>
           <li><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg>Compress, rotate and convert many PDFs at once</li>
           <li><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg>Results delivered as one zip</li>
           <li><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg>Use it in up to 3 browsers</li>
@@ -351,7 +376,7 @@
       <div class="section-head"><h2>Questions</h2></div>
       <details><summary>Are my files uploaded anywhere?</summary><p>No. Your PDF is opened and processed inside your browser, on your own device. Paperbench has no server that receives files.</p></details>
       <details><summary>Is it really free?</summary><p>Yes. All six tools are free with no daily limit and no account. Free handles one file at a time (Merge takes as many as you like).</p></details>
-      <details><summary>What does Pro add?</summary><p>Four extra tools (Organize pages, OCR for scanned PDFs, Watermark and Page numbers) plus batch processing: drop many PDFs into Compress, Rotate or PDF to images and get them all back in one zip.</p></details>
+      <details><summary>What does Pro add?</summary><p>Five extra tools (Edit text, Organize pages, OCR for scanned PDFs, Watermark and Page numbers) plus batch processing: drop many PDFs into Compress, Rotate or PDF to images and get them all back in one zip.</p></details>
       <details><summary>How do I activate Pro?</summary><p>After you pay, you get a license key by email. Click Go Pro, paste the key and choose Activate. One key works in up to 3 browsers.</p></details>
       <details><summary>Can I cancel?</summary><p>Yes, any time. Once you cancel, you won't be charged again.</p></details>
       <details><summary>Will compressing change my document?</summary><p>Light compression keeps everything as it is. Strong and Extreme turn each page into an image, which makes files much smaller but means text can no longer be selected or searched.</p></details>
@@ -391,7 +416,7 @@
   <button class="x" id="pro-close" type="button" aria-label="Close">×</button>
   <h2 id="pro-title">Paperbench Pro</h2>
   <div id="pro-pitch">
-    <p><b style="color:var(--ink)">Rs 500 a month or Rs 4,000 a year.</b> Four extra tools (Organize pages, OCR, Watermark, Page numbers) and batch processing for many PDFs at once. Everything still runs on your device.</p>
+    <p><b style="color:var(--ink)">Rs 500 a month or Rs 4,000 a year.</b> Five extra tools (Edit text, Organize pages, OCR, Watermark, Page numbers) and batch processing for many PDFs at once. Everything still runs on your device.</p>
     <div class="actions"><a id="pro-buy" class="btn" href="#" target="_blank" rel="noopener">Buy Pro</a></div>
     <p class="hint" id="pro-soon" hidden>Checkout isn't open yet. Please check back soon.</p>
     <p class="hint">Paying with a Pakistani card? Turn on international online payments in your banking app first.</p>
@@ -411,6 +436,6 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-<script src="app.js?v=17"></script>
+<script src="app.js?v=18"></script>
 </body>
 </html>
