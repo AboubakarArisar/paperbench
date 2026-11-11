@@ -221,6 +221,7 @@ if (typeof document !== 'undefined') {
     $('pro-pitch').hidden = pro.active;
     $('pro-on').hidden = !pro.active;
     $('pro-open').textContent = pro.active ? 'Pro ✓' : 'Go Pro';
+    document.body.classList.toggle('is-pro', pro.active); // styles.css swaps the free and Pro wording
     document.querySelectorAll('.pro-banner').forEach(b => { b.hidden = pro.active; });
     document.querySelectorAll('[data-pro-label]').forEach(b => { b.textContent = pro.active ? b.dataset.label : b.dataset.proLabel; });
   }

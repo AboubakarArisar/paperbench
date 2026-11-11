@@ -10,7 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&display=swap">
-<link rel="stylesheet" href="styles.css?v=19">
+<link rel="stylesheet" href="styles.css?v=20">
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
@@ -72,7 +72,7 @@
 
   <section class="section alt" id="tools">
     <div class="wrap">
-      <div class="section-head"><h2>Six tools. All free.</h2><p>Pick one and drop in a file. It starts working straight away.</p></div>
+      <div class="section-head"><h2><span class="when-free">Six tools. All free.</span><span class="when-pro">All eleven tools. Unlocked.</span></h2><p><span class="when-free">Pick one and drop in a file. It starts working straight away.</span><span class="when-pro">You're on Pro. Every tool here is yours, and you can process several files at once.</span></p></div>
       <div class="grid">
         <a class="card" href="#merge"><span class="tile"><svg class="icon" aria-hidden="true"><use href="#i-merge"/></svg></span><h3>Merge PDF</h3><p>Combine several PDFs into one file.</p><span class="go link-arrow">Open</span></a>
         <a class="card" href="#split"><span class="tile"><svg class="icon" aria-hidden="true"><use href="#i-split"/></svg></span><h3>Split PDF</h3><p>Pull out the pages you need, or save every page separately.</p><span class="go link-arrow">Open</span></a>
@@ -80,6 +80,14 @@
         <a class="card" href="#rotate"><span class="tile"><svg class="icon" aria-hidden="true"><use href="#i-rotate"/></svg></span><h3>Rotate PDF</h3><p>Turn every page, or only the ones that are sideways.</p><span class="go link-arrow">Open</span></a>
         <a class="card" href="#images"><span class="tile"><svg class="icon" aria-hidden="true"><use href="#i-images"/></svg></span><h3>PDF to images</h3><p>Save each page as a PNG or JPG.</p><span class="go link-arrow">Open</span></a>
         <a class="card" href="#sign"><span class="tile"><svg class="icon" aria-hidden="true"><use href="#i-sign"/></svg></span><h3>Sign PDF</h3><p>Draw your signature and place it on the page.</p><span class="go link-arrow">Open</span></a>
+      </div>
+      <div class="sub-head"><h3><span class="when-free">Five more with Pro</span><span class="when-pro">Your Pro tools</span></h3><a class="link-arrow when-free" href="#pricing">See pricing</a></div>
+      <div class="grid">
+        <a class="card" href="#edit"><span class="pro-badge">Pro</span><span class="tile"><svg class="icon" aria-hidden="true"><use href="#i-edit"/></svg></span><h3>Edit text</h3><p>Change the words in a PDF: fix a date, a name or a sentence.</p><span class="go link-arrow">Open</span></a>
+        <a class="card" href="#organize"><span class="pro-badge">Pro</span><span class="tile"><svg class="icon" aria-hidden="true"><use href="#i-organize"/></svg></span><h3>Organize pages</h3><p>Reorder or remove pages by dragging their thumbnails.</p><span class="go link-arrow">Open</span></a>
+        <a class="card" href="#ocr"><span class="pro-badge">Pro</span><span class="tile"><svg class="icon" aria-hidden="true"><use href="#i-ocr"/></svg></span><h3>OCR</h3><p>Make a scanned PDF searchable, with text you can select and copy.</p><span class="go link-arrow">Open</span></a>
+        <a class="card" href="#watermark"><span class="pro-badge">Pro</span><span class="tile"><svg class="icon" aria-hidden="true"><use href="#i-watermark"/></svg></span><h3>Watermark</h3><p>Stamp text such as Confidential across every page.</p><span class="go link-arrow">Open</span></a>
+        <a class="card" href="#numbers"><span class="pro-badge">Pro</span><span class="tile"><svg class="icon" aria-hidden="true"><use href="#i-numbers"/></svg></span><h3>Page numbers</h3><p>Number every page, in the corner you choose.</p><span class="go link-arrow">Open</span></a>
       </div>
     </div>
   </section>
@@ -122,20 +130,7 @@
     </div>
   </section>
 
-  <section class="section">
-    <div class="wrap">
-      <div class="section-head"><h2>Five more with Pro.</h2><p>Extra tools for bigger jobs. They run on your device too.</p></div>
-      <div class="grid">
-        <a class="card" href="#edit"><span class="pro-badge">Pro</span><span class="tile"><svg class="icon" aria-hidden="true"><use href="#i-edit"/></svg></span><h3>Edit text</h3><p>Change the words in a PDF: fix a date, a name or a sentence.</p><span class="go link-arrow">Open</span></a>
-        <a class="card" href="#organize"><span class="pro-badge">Pro</span><span class="tile"><svg class="icon" aria-hidden="true"><use href="#i-organize"/></svg></span><h3>Organize pages</h3><p>Reorder or remove pages by dragging their thumbnails.</p><span class="go link-arrow">Open</span></a>
-        <a class="card" href="#ocr"><span class="pro-badge">Pro</span><span class="tile"><svg class="icon" aria-hidden="true"><use href="#i-ocr"/></svg></span><h3>OCR</h3><p>Make a scanned PDF searchable, with text you can select and copy.</p><span class="go link-arrow">Open</span></a>
-        <a class="card" href="#watermark"><span class="pro-badge">Pro</span><span class="tile"><svg class="icon" aria-hidden="true"><use href="#i-watermark"/></svg></span><h3>Watermark</h3><p>Stamp text such as Confidential across every page.</p><span class="go link-arrow">Open</span></a>
-        <a class="card" href="#numbers"><span class="pro-badge">Pro</span><span class="tile"><svg class="icon" aria-hidden="true"><use href="#i-numbers"/></svg></span><h3>Page numbers</h3><p>Number every page, in the corner you choose.</p><span class="go link-arrow">Open</span></a>
-      </div>
-    </div>
-  </section>
-
-  <section class="section alt band">
+  <section class="section band when-free">
     <div class="wrap">
       <h2>A whole folder to get through?</h2>
       <p>Paperbench Pro compresses, rotates and converts many PDFs in one go, and hands them back as a single zip.</p>
@@ -436,6 +431,6 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-<script src="app.js?v=19"></script>
+<script src="app.js?v=20"></script>
 </body>
 </html>
