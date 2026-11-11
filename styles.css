@@ -286,3 +286,8 @@ h1 .pro-badge { margin-left: 6px; letter-spacing: .06em; }
 .edit-line { position: absolute; padding: 0; border: 0; border-radius: 3px; background: transparent; cursor: text; outline: 1px dashed transparent; transition: background .12s, outline-color .12s; }
 .edit-line:hover, .edit-line:focus-visible { background: color-mix(in srgb, var(--accent) 16%, transparent); outline-color: var(--accent); }
 input.edit-input { width: auto; position: absolute; z-index: 2; transform: translate(-6px, -5px); max-width: 96%; min-height: 0; padding: 3px 6px; border: 2px solid var(--accent); border-radius: 6px; background: #fff; color: #111; font-family: Georgia, "Times New Roman", serif; line-height: 1.2; box-shadow: var(--shadow-lg); }
+
+/* Banner on Pro tools for free visitors */
+.pro-banner { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 12px 14px; margin-bottom: 16px; border-radius: var(--r-sm); background: color-mix(in srgb, var(--accent) 12%, transparent); border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent); }
+.pro-banner .icon { width: 18px; height: 18px; color: var(--accent-text); }
+.pro-banner p { flex: 1; min-width: 200px; font-size: 14px; color: var(--ink); }

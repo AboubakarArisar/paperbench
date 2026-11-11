@@ -175,9 +175,11 @@ if (typeof document !== 'undefined') {
   }
 
   // Wires a tool button: shows progress, surfaces errors in the tool's status line.
-  function tool(name, fn) {
+  // `proOnly` marks a Pro tool: a free visitor who presses its button gets the Pro dialog, not an error.
+  function tool(name, fn, proOnly) {
     const btn = $(`${name}-go`), panel = $(name).querySelector('.panel'), status = panel.querySelector('.status');
     btn.onclick = async () => {
+      if (proOnly && !pro.active) return openPro();
       btn.disabled = true;
       status.className = 'status';
       status.textContent = '';
@@ -219,6 +221,8 @@ if (typeof document !== 'undefined') {
     $('pro-pitch').hidden = pro.active;
     $('pro-on').hidden = !pro.active;
     $('pro-open').textContent = pro.active ? 'Pro ✓' : 'Go Pro';
+    document.querySelectorAll('.pro-banner').forEach(b => { b.hidden = pro.active; });
+    document.querySelectorAll('[data-pro-label]').forEach(b => { b.textContent = pro.active ? b.dataset.label : b.dataset.proLabel; });
   }
   const proSay = (msg, err) => { $('pro-status').className = err ? 'status err' : 'status'; $('pro-status').textContent = msg; };
 
@@ -235,6 +239,25 @@ if (typeof document !== 'undefined') {
       } catch { pro.active = Date.now() - s.checkedAt < 7 * DAY; }
     }
     showPro();
+  }
+
+  // Pro tools: a banner tells free visitors what they can try and what needs Pro, and the main button says so too.
+  const PRO_TOOLS = {
+    edit: ['Try it free: open a PDF and change any line to see how it looks. Saving the edited PDF needs Pro.', 'Go Pro to save'],
+    organize: ['Try it free: open a PDF and rearrange its pages. Saving the new PDF needs Pro.', 'Go Pro to save'],
+    ocr: ['OCR is a Pro tool. Go Pro to make scanned PDFs searchable.', 'Go Pro to use OCR'],
+    watermark: ['Watermark is a Pro tool. Go Pro to stamp your PDFs.', 'Go Pro to add watermarks'],
+    numbers: ['Page numbers is a Pro tool. Go Pro to number your PDFs.', 'Go Pro to add page numbers'],
+  };
+  for (const [id, [text, label]] of Object.entries(PRO_TOOLS)) {
+    const banner = document.createElement('div');
+    banner.className = 'pro-banner';
+    banner.innerHTML = '<svg class="icon" aria-hidden="true"><use href="#i-lock"/></svg><p></p><button class="btn small" type="button" data-pro>Go Pro</button>';
+    banner.querySelector('p').textContent = text;
+    $(id).querySelector('.panel').prepend(banner);
+    const go = $(`${id}-go`);
+    go.dataset.label = go.textContent;
+    go.dataset.proLabel = label;
   }
 
   $('pro-buy').href = LEMON.checkout || '#';
@@ -268,19 +291,11 @@ if (typeof document !== 'undefined') {
 
   // Tool that takes one PDF free, several with Pro. `one(file)` returns { out: [[name, data], ...], msg }.
   // A single output downloads directly; anything more is zipped.
-  // Stops a free user at the button of a Pro-only tool and opens the upgrade dialog.
-  function needPro(what) {
-    if (pro.active) return;
-    $('pro-open').click();
-    throw new Error(`${what} is a Pro tool. Go Pro to use it.`);
-  }
-
   // `proOnly` (a tool name) makes the whole tool Pro; otherwise only several-files-at-once is Pro.
   function batchTool(name, one, proOnly) {
     tool(name, async () => {
       const files = [...$(`${name}-file`).files];
       if (!files.length) throw new Error('Choose a PDF file first');
-      if (proOnly) needPro(proOnly);
       if (files.length > 1 && !pro.active) {
         $('pro-open').click();
         throw new Error('Processing several files at once is a Pro feature. Pick one file, or go Pro.');
@@ -294,7 +309,7 @@ if (typeof document !== 'undefined') {
       if (out.length === 1) download(out[0][1], out[0][0]);
       else if (out.length) download(await zip(out), files.length > 1 ? `paperbench-${name}.zip` : `${base(files[0])}-${name}.zip`);
       return msgs.join('\n');
-    });
+    }, proOnly);
   }
 
   tool('merge', async () => {
@@ -432,12 +447,11 @@ if (typeof document !== 'undefined') {
     const f = fileFrom('organize-file');
     if (!org) throw new Error('Still loading the pages. Try again in a moment.');
     if (!org.order.length) throw new Error('Keep at least one page');
-    needPro('Organize pages');
     const src = await load(await f.arrayBuffer()), out = await PDFDocument.create();
     (await out.copyPages(src, org.order)).forEach(p => out.addPage(p));
     download(await out.save(), `${base(f)}-organized.pdf`);
     return `Saved ${org.order.length} of ${src.getPageCount()} pages in the new order.`;
-  });
+  }, 'Organize pages');
 
   // --- OCR: each page becomes an image with invisible, searchable text behind it ---
   const loadScript = src => new Promise((ok, fail) => {
@@ -449,7 +463,6 @@ if (typeof document !== 'undefined') {
   });
   tool('ocr', async () => {
     const f = fileFrom('ocr-file');
-    needPro('OCR');
     // Loaded only when OCR is first used, so the rest of the site stays light.
     if (!window.Tesseract) await loadScript('https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js');
     const pdf = await openJs(await f.arrayBuffer()), out = await PDFDocument.create();
@@ -468,7 +481,7 @@ if (typeof document !== 'undefined') {
     } finally { await worker.terminate(); }
     download(await out.save(), `${base(f)}-searchable.pdf`);
     return `Recognized about ${words} words on ${pdf.numPages} page${pdf.numPages === 1 ? '' : 's'}.`;
-  });
+  }, 'OCR');
 
   // --- Watermark: diagonal text across every page ---
   batchTool('watermark', async f => {
@@ -733,10 +746,9 @@ if (typeof document !== 'undefined') {
     fileFrom('edit-file');
     if (!ed) throw new Error('Still opening the PDF. Try again in a moment.');
     if (!ed.undo.length) throw new Error('Change some text first: click a line on the page.');
-    needPro('Edit text');
     download(ed.bytes, `${ed.name.replace(/\.pdf$/i, '')}-edited.pdf`);
     return `Saved with ${ed.undo.length} line${ed.undo.length === 1 ? '' : 's'} changed.`;
-  });
+  }, 'Edit text');
 
   // --- Sign: draw pad + click-to-place preview ---
   const pad = $('sig-pad'), ctx = pad.getContext('2d');
