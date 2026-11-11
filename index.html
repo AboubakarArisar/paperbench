@@ -10,7 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&display=swap">
-<link rel="stylesheet" href="styles.css?v=20">
+<link rel="stylesheet" href="styles.css?v=21">
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
@@ -28,6 +28,8 @@
   <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.500l4.500 4.500L19 7"/></symbol>
   <symbol id="i-bolt" viewBox="0 0 24 24"><path d="M13 3L5 14h6l-1 7 8-11h-6z"/></symbol>
   <symbol id="i-infinity" viewBox="0 0 24 24"><path d="M12 12c-2-3-3.500-4.500-5.500-4.500a4.500 4.500 0 0 0 0 9c2 0 3.500-1.500 5.500-4.500zm0 0c2 3 3.500 4.500 5.500 4.500a4.500 4.500 0 0 0 0-9c-2 0-3.500 1.500-5.500 4.500z"/></symbol>
+  <symbol id="i-img2pdf" viewBox="0 0 24 24"><rect x="3" y="3" width="11" height="11" rx="2"/><circle cx="7" cy="7" r="1.2"/><path d="M14 11l-3-3-6 6M17 10h2a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-7a2 2 0 0 1-2-2v-2"/></symbol>
+  <symbol id="i-text" viewBox="0 0 24 24"><path d="M6 3h9l4 4v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2zM8 11h8M8 14.5h8M8 18h5"/></symbol>
   <symbol id="i-edit" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4"/></symbol>
   <symbol id="i-organize" viewBox="0 0 24 24"><rect x="3" y="4" width="7" height="9" rx="1.5"/><rect x="14" y="4" width="7" height="9" rx="1.5"/><path d="M5 18h14m0 0l-3-2.5M19 18l-3 2.5"/></symbol>
   <symbol id="i-ocr" viewBox="0 0 24 24"><path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2M8 9h8M8 12h8M8 15h5"/></symbol>
@@ -72,7 +74,7 @@
 
   <section class="section alt" id="tools">
     <div class="wrap">
-      <div class="section-head"><h2><span class="when-free">Six tools. All free.</span><span class="when-pro">All eleven tools. Unlocked.</span></h2><p><span class="when-free">Pick one and drop in a file. It starts working straight away.</span><span class="when-pro">You're on Pro. Every tool here is yours, and you can process several files at once.</span></p></div>
+      <div class="section-head"><h2><span class="when-free">Eight tools. All free.</span><span class="when-pro">All thirteen tools. Unlocked.</span></h2><p><span class="when-free">Pick one and drop in a file. It starts working straight away.</span><span class="when-pro">You're on Pro. Every tool here is yours, and you can process several files at once.</span></p></div>
       <div class="grid">
         <a class="card" href="#merge"><span class="tile"><svg class="icon" aria-hidden="true"><use href="#i-merge"/></svg></span><h3>Merge PDF</h3><p>Combine several PDFs into one file.</p><span class="go link-arrow">Open</span></a>
         <a class="card" href="#split"><span class="tile"><svg class="icon" aria-hidden="true"><use href="#i-split"/></svg></span><h3>Split PDF</h3><p>Pull out the pages you need, or save every page separately.</p><span class="go link-arrow">Open</span></a>
@@ -80,6 +82,8 @@
         <a class="card" href="#rotate"><span class="tile"><svg class="icon" aria-hidden="true"><use href="#i-rotate"/></svg></span><h3>Rotate PDF</h3><p>Turn every page, or only the ones that are sideways.</p><span class="go link-arrow">Open</span></a>
         <a class="card" href="#images"><span class="tile"><svg class="icon" aria-hidden="true"><use href="#i-images"/></svg></span><h3>PDF to images</h3><p>Save each page as a PNG or JPG.</p><span class="go link-arrow">Open</span></a>
         <a class="card" href="#sign"><span class="tile"><svg class="icon" aria-hidden="true"><use href="#i-sign"/></svg></span><h3>Sign PDF</h3><p>Draw your signature and place it on the page.</p><span class="go link-arrow">Open</span></a>
+        <a class="card" href="#img2pdf"><span class="tile"><svg class="icon" aria-hidden="true"><use href="#i-img2pdf"/></svg></span><h3>Images to PDF</h3><p>Turn photos or screenshots into one PDF.</p><span class="go link-arrow">Open</span></a>
+        <a class="card" href="#text"><span class="tile"><svg class="icon" aria-hidden="true"><use href="#i-text"/></svg></span><h3>PDF to text</h3><p>Copy all the words out of a PDF into a text file.</p><span class="go link-arrow">Open</span></a>
       </div>
       <div class="sub-head"><h3><span class="when-free">Five more with Pro</span><span class="when-pro">Your Pro tools</span></h3><a class="link-arrow when-free" href="#pricing">See pricing</a></div>
       <div class="grid">
@@ -214,7 +218,7 @@
       <input id="images-file" type="file" accept="application/pdf" multiple aria-label="PDF file to convert"></label>
     <div class="fields">
       <div class="field"><label for="images-fmt">Format</label>
-        <select id="images-fmt"><option value="image/png">PNG</option><option value="image/jpeg">JPG</option></select></div>
+        <select id="images-fmt"><option value="image/png">PNG</option><option value="image/jpeg">JPG</option><option value="image/webp">WebP</option></select></div>
       <div class="field"><label for="images-scale">Quality</label>
         <select id="images-scale"><option value="1">Screen (72 dpi)</option><option value="2" selected>Standard (144 dpi)</option><option value="4">Print (288 dpi)</option></select></div>
     </div>
@@ -242,6 +246,36 @@
       <canvas id="sig-preview" width="1" height="1" hidden></canvas>
       <p class="muted hint" id="sig-empty">The page appears here once you choose a PDF.</p></div>
     <div class="actions"><button class="btn" id="sign-go" type="button">Sign and download</button></div>
+    <div class="status" role="status"></div>
+  </div>
+  <p class="local"><svg class="icon" aria-hidden="true"><use href="#i-lock"/></svg>Processed on your device. Nothing is uploaded.</p>
+</div>
+
+<div class="view page" id="img2pdf" data-title="Images to PDF" hidden>
+  <a class="back" href="#tools">‹ All tools</a>
+  <div class="page-head"><span class="tile"><svg class="icon" aria-hidden="true"><use href="#i-img2pdf"/></svg></span><div><h1 tabindex="-1">Images to PDF</h1><p>Turn photos or screenshots into one PDF.</p></div></div>
+  <div class="panel">
+    <label class="drop"><svg class="icon" aria-hidden="true"><use href="#i-upload"/></svg><span class="drop-title">Drop images here or <u>browse</u></span><span class="drop-hint">JPG, PNG or WebP. One page each, in the order you pick them</span><span class="drop-files" aria-live="polite"></span>
+      <input id="img2pdf-files" type="file" accept="image/jpeg,image/png,image/webp" multiple aria-label="Images to turn into a PDF"></label>
+    <div class="fields">
+      <div class="field"><label for="img2pdf-size">Page size</label>
+        <select id="img2pdf-size"><option value="a4">A4</option><option value="letter">US Letter</option><option value="fit">Same shape as the image</option></select></div>
+      <div class="field"><label for="img2pdf-margin">Margin</label>
+        <select id="img2pdf-margin"><option value="24">Small</option><option value="0">None</option><option value="48">Large</option></select></div>
+    </div>
+    <div class="actions"><button class="btn" id="img2pdf-go" type="button">Make PDF</button></div>
+    <div class="status" role="status"></div>
+  </div>
+  <p class="local"><svg class="icon" aria-hidden="true"><use href="#i-lock"/></svg>Processed on your device. Nothing is uploaded.</p>
+</div>
+
+<div class="view page" id="text" data-title="PDF to text" hidden>
+  <a class="back" href="#tools">‹ All tools</a>
+  <div class="page-head"><span class="tile"><svg class="icon" aria-hidden="true"><use href="#i-text"/></svg></span><div><h1 tabindex="-1">PDF to text</h1><p>Copy all the words out of a PDF into a text file.</p></div></div>
+  <div class="panel">
+    <label class="drop"><svg class="icon" aria-hidden="true"><use href="#i-upload"/></svg><span class="drop-title">Drop a PDF here or <u>browse</u></span><span class="drop-hint"><span class="pro-tag">Pro:</span> drop several at once</span><span class="drop-files" aria-live="polite"></span>
+      <input id="text-file" type="file" accept="application/pdf" multiple aria-label="PDF file to copy text from"></label>
+    <div class="actions"><button class="btn" id="text-go" type="button">Save as text</button></div>
     <div class="status" role="status"></div>
   </div>
   <p class="local"><svg class="icon" aria-hidden="true"><use href="#i-lock"/></svg>Processed on your device. Nothing is uploaded.</p>
@@ -336,14 +370,14 @@
 <!-- ============ Pricing ============ -->
 <div class="view" id="pricing" data-title="Pricing" hidden>
   <section class="section wrap">
-    <div class="section-head"><h1 tabindex="-1" style="font-size:clamp(36px,6vw,56px);font-weight:800;letter-spacing:-.04em">Free for one file.<br>Pro for the whole folder.</h1><p>Six tools are free with no daily limit. Pro adds five more tools and batch processing.</p></div>
+    <div class="section-head"><h1 tabindex="-1" style="font-size:clamp(36px,6vw,56px);font-weight:800;letter-spacing:-.04em">Free for one file.<br>Pro for the whole folder.</h1><p>Eight tools are free with no daily limit. Pro adds five more tools and batch processing.</p></div>
     <div class="plans">
       <div class="plan">
         <h2>Free</h2>
         <div class="price">Rs 0</div>
         <p class="sub">No account needed.</p>
         <ul>
-          <li><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg>All six PDF tools</li>
+          <li><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg>All eight free PDF tools</li>
           <li><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg>No daily limit</li>
           <li><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg>Files never leave your device</li>
           <li><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg>Merge any number of PDFs</li>
@@ -370,7 +404,7 @@
     <div class="wrap faq">
       <div class="section-head"><h2>Questions</h2></div>
       <details><summary>Are my files uploaded anywhere?</summary><p>No. Your PDF is opened and processed inside your browser, on your own device. Paperbench has no server that receives files.</p></details>
-      <details><summary>Is it really free?</summary><p>Yes. All six tools are free with no daily limit and no account. Free handles one file at a time (Merge takes as many as you like).</p></details>
+      <details><summary>Is it really free?</summary><p>Yes. All eight free tools have no daily limit and need no account. Free handles one file at a time (Merge and Images to PDF take as many as you like).</p></details>
       <details><summary>What does Pro add?</summary><p>Five extra tools (Edit text, Organize pages, OCR for scanned PDFs, Watermark and Page numbers) plus batch processing: drop many PDFs into Compress, Rotate or PDF to images and get them all back in one zip.</p></details>
       <details><summary>How do I activate Pro?</summary><p>After you pay, you get a license key by email. Click Go Pro, paste the key and choose Activate. One key works in up to 3 browsers.</p></details>
       <details><summary>Can I cancel?</summary><p>Yes, any time. Once you cancel, you won't be charged again.</p></details>
@@ -431,6 +465,6 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-<script src="app.js?v=20"></script>
+<script src="app.js?v=21"></script>
 </body>
 </html>

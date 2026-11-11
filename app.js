@@ -383,15 +383,62 @@ if (typeof document !== 'undefined') {
     return { out: [[`${base(f)}-rotated.pdf`, await doc.save()]], msg: `Rotated ${idx.length} page${idx.length === 1 ? '' : 's'}.` };
   });
 
+  const EXT = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp' };
   batchTool('images', async f => {
-    const type = $('images-fmt').value, ext = type === 'image/png' ? 'png' : 'jpg';
+    const type = $('images-fmt').value;
     const pdf = await openJs(await f.arrayBuffer());
     const files = [];
     for (let i = 1; i <= pdf.numPages; i++) {
       const { canvas } = await renderPage(pdf, i, +$('images-scale').value);
-      files.push([`${base(f)}-${i}.${ext}`, await toBlob(canvas, type, 0.92)]);
+      const blob = await toBlob(canvas, type, 0.92);
+      // A browser that can't write the chosen format (WebP on old Safari) gives PNG; name the file for what it is.
+      files.push([`${base(f)}-${i}.${EXT[blob.type] || EXT[type]}`, blob]);
     }
     return { out: files, msg: `Converted ${files.length} page${files.length === 1 ? '' : 's'}.` };
+  });
+
+  // --- Images to PDF: one page per picture, in the order they were picked ---
+  const PAGE = { a4: [595.28, 841.89], letter: [612, 792] };
+  tool('img2pdf', async () => {
+    const files = [...$('img2pdf-files').files];
+    if (!files.length) throw new Error('Choose one or more images first');
+    const out = await PDFDocument.create(), size = $('img2pdf-size').value, margin = +$('img2pdf-margin').value;
+    for (const f of files) {
+      let img;
+      try {
+        if (f.type === 'image/png') img = await out.embedPng(await f.arrayBuffer());
+        else {
+          // Redraw through a canvas so phone photos come out the right way up (it applies the photo's rotation tag)
+          // and so formats pdf-lib can't read, like WebP, still work.
+          const bmp = await createImageBitmap(f), c = document.createElement('canvas');
+          c.width = bmp.width; c.height = bmp.height;
+          const g = c.getContext('2d');
+          g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height);
+          g.drawImage(bmp, 0, 0);
+          img = await out.embedJpg(await (await toBlob(c, 'image/jpeg', 0.9)).arrayBuffer());
+        }
+      } catch { throw new Error(`${f.name} isn't an image this browser can open.`); }
+      let [pw, ph] = size === 'fit' ? [595.28, 595.28 * img.height / img.width + 2 * margin * (1 - img.height / img.width)] : PAGE[size];
+      if (size !== 'fit' && img.width > img.height) [pw, ph] = [ph, pw]; // landscape picture, landscape page
+      const k = Math.min((pw - 2 * margin) / img.width, (ph - 2 * margin) / img.height);
+      const w = img.width * k, h = img.height * k;
+      out.addPage([pw, ph]).drawImage(img, { x: (pw - w) / 2, y: (ph - h) / 2, width: w, height: h });
+    }
+    download(await out.save(), files.length === 1 ? `${files[0].name.replace(/\.[^.]+$/, '')}.pdf` : 'images.pdf');
+    return `Made a PDF with ${files.length} page${files.length === 1 ? '' : 's'}.`;
+  });
+
+  // --- PDF to text ---
+  batchTool('text', async f => {
+    const pdf = await openJs(await f.arrayBuffer()), pages = [];
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const { items } = await (await pdf.getPage(i)).getTextContent();
+      pages.push(items.map(it => it.str + (it.hasEOL ? '\n' : '')).join('').replace(/[ \t]+\n/g, '\n').trim());
+    }
+    const text = pages.join('\n\n').trim();
+    if (!text) return { out: [], msg: `${f.name} has no text to copy out. If it's a scan, run OCR on it first.` };
+    const words = text.split(/\s+/).length;
+    return { out: [[`${base(f)}.txt`, new Blob([text], { type: 'text/plain' })]], msg: `Copied out about ${words} word${words === 1 ? '' : 's'} from ${pdf.numPages} page${pdf.numPages === 1 ? '' : 's'}.` };
   });
 
   // ===== Pro tools =====
