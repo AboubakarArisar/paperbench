@@ -1,11 +1,14 @@
 /* Paperbench design system: neutral surfaces, one accent, no gradients. */
 /* Dark only. Type: Manrope, extra-bold lowercase headlines with tight tracking. */
 :root {
-  --bg: #000; --surface: #111112; --surface-2: #19191b;
-  --ink: #fff; --muted: rgba(255, 255, 255, .6); --line: #3a3a3d; --line-soft: #262628;
-  --accent: #0071e3; --accent-hover: #0a7cf0; --accent-text: #2997ff;
-  --ok: #30d158; --err: #ff453a;
-  --nav: rgba(0, 0, 0, .72);
+  /* About 90% midnight black and white, 10% lime. Lime is the only colour; it also marks success. */
+  --bg: #07080a; --surface: #0e1013; --surface-2: #14161a;
+  --ink: #fff; --muted: rgba(255, 255, 255, .6); --line: #33363c; --line-soft: #1f2227;
+  --accent: #c8f542; --accent-hover: #d8ff66; --accent-text: #c8f542;
+  --on-accent: #0a0c08;       /* text and icons that sit on lime */
+  --accent-on-light: #4d7c0f; /* lime is too pale on a white PDF page, so highlights there use this */
+  --ok: #c8f542; --err: #ff5a52;
+  --nav: rgba(7, 8, 10, .72);
   --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 8px 24px rgba(0, 0, 0, .5);
   --shadow-lg: 0 24px 60px rgba(0, 0, 0, .7);
   --r: 18px; --r-sm: 12px;
@@ -37,7 +40,7 @@ a:hover { text-decoration: underline; }
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 8px;
   min-height: 44px; padding: 0 22px; border: 0; border-radius: 980px; cursor: pointer;
-  font: inherit; font-weight: 700; background: var(--accent); color: #fff;
+  font: inherit; font-weight: 700; background: var(--accent); color: var(--on-accent);
   transition: background .15s, transform .1s, opacity .15s;
 }
 .btn:hover { background: var(--accent-hover); text-decoration: none; }
@@ -191,7 +194,8 @@ dialog p { color: var(--muted); margin-top: 10px; font-size: 16px; }
 .toast { pointer-events: auto; display: flex; align-items: center; gap: 10px; max-width: min(420px, 100%); padding: 11px 16px 11px 12px; border-radius: 14px; background: var(--surface); color: var(--ink); border: 1px solid var(--line-soft); box-shadow: var(--shadow-lg); font-size: 15px; font-weight: 500; line-height: 1.35; cursor: pointer; animation: toast-in .35s cubic-bezier(.2, .9, .3, 1.25); transition: opacity .2s, transform .2s; }
 .toast.out { opacity: 0; transform: translateY(-8px) scale(.96); }
 @keyframes toast-in { from { opacity: 0; transform: translateY(-16px) scale(.94); } }
-.toast-icon { width: 20px; height: 20px; flex: none; display: grid; place-items: center; border-radius: 50%; color: #fff; }
+.toast-icon { width: 20px; height: 20px; flex: none; display: grid; place-items: center; border-radius: 50%; color: var(--on-accent); }
+.toast.error .toast-icon { color: #fff; }
 .toast-icon svg { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
 .toast.success .toast-icon { background: var(--ok); animation: icon-pop .3s .1s cubic-bezier(.2, .9, .3, 1.6) backwards; }
 .toast.error .toast-icon { background: var(--err); animation: icon-pop .3s .1s cubic-bezier(.2, .9, .3, 1.6) backwards; }
@@ -238,7 +242,7 @@ a.card:hover .link-arrow::after, a.link-arrow:hover::after { transform: translat
 /* Finished screen: replaces the form once a file has been saved */
 .panel.is-done > :not(.done) { display: none; }
 .done { text-align: center; padding: 20px 0 8px; animation: rise .5s cubic-bezier(.2, .7, .2, 1); }
-.done-check { display: inline-grid; place-items: center; width: 56px; height: 56px; border-radius: 50%; background: var(--ok); color: #000; animation: icon-pop .45s .1s cubic-bezier(.2, .9, .3, 1.6) backwards; }
+.done-check { display: inline-grid; place-items: center; width: 56px; height: 56px; border-radius: 50%; background: var(--ok); color: var(--on-accent); animation: icon-pop .45s .1s cubic-bezier(.2, .9, .3, 1.6) backwards; }
 .done-check svg { width: 28px; height: 28px; fill: none; stroke: currentColor; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
 .done h2 { font-size: 26px; font-weight: 800; letter-spacing: -.04em; margin-top: 18px; }
 .done p { color: var(--muted); margin-top: 10px; white-space: pre-line; overflow-wrap: anywhere; }
@@ -284,8 +288,8 @@ h1 .pro-badge { margin-left: 6px; letter-spacing: .06em; }
 .edit-stage { position: relative; border: 1px solid var(--line); border-radius: var(--r-sm); overflow: hidden; background: #fff; }
 .edit-stage canvas { display: block; width: 100%; border: 0; border-radius: 0; }
 .edit-line { position: absolute; padding: 0; border: 0; border-radius: 3px; background: transparent; cursor: text; outline: 1px dashed transparent; transition: background .12s, outline-color .12s; }
-.edit-line:hover, .edit-line:focus-visible { background: color-mix(in srgb, var(--accent) 16%, transparent); outline-color: var(--accent); }
-input.edit-input { width: auto; position: absolute; z-index: 2; transform: translate(-6px, -5px); max-width: 96%; min-height: 0; padding: 3px 6px; border: 2px solid var(--accent); border-radius: 6px; background: #fff; color: #111; font-family: Georgia, "Times New Roman", serif; line-height: 1.2; box-shadow: var(--shadow-lg); }
+.edit-line:hover, .edit-line:focus-visible { background: color-mix(in srgb, var(--accent-on-light) 18%, transparent); outline-color: var(--accent-on-light); }
+input.edit-input { width: auto; position: absolute; z-index: 2; transform: translate(-6px, -5px); max-width: 96%; min-height: 0; padding: 3px 6px; border: 2px solid var(--accent-on-light); border-radius: 6px; background: #fff; color: #111; font-family: Georgia, "Times New Roman", serif; line-height: 1.2; box-shadow: var(--shadow-lg); }
 
 /* Banner on Pro tools for free visitors */
 .pro-banner { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 12px 14px; margin-bottom: 16px; border-radius: var(--r-sm); background: color-mix(in srgb, var(--accent) 12%, transparent); border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent); }

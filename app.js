@@ -845,7 +845,7 @@ if (typeof document !== 'undefined') {
     spot = [(e.clientX - r.left) * prev.width / r.width, (e.clientY - r.top) * prev.height / r.height];
     const c = prev.getContext('2d');
     c.putImageData(preview.img, 0, 0);
-    c.strokeStyle = '#0071e3'; c.lineWidth = 2;
+    c.strokeStyle = '#4d7c0f'; c.lineWidth = 2;
     c.strokeRect(spot[0], spot[1], +$('sign-width').value * preview.scale, 40 * preview.scale);
   };
 
